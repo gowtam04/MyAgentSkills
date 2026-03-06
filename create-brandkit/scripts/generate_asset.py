@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Generate a brand asset via the BrandKit API.
+"""Generate or modify a brand asset via the BrandKit API.
 
-Submits a generation job, polls until complete, decodes the base64 image,
-and saves it to the specified output path. Optionally resizes to multiple
-sizes and generates .ico files.
+Submits a generation or modification job, polls until complete, decodes the
+base64 image, and saves it to the specified output path. Optionally resizes
+to multiple sizes and generates .ico files.
 
 Usage:
+    # Generate a new image:
     python3 generate_asset.py --prompt "..." --output ./logo.png [options]
+
+    # Modify an existing image:
+    python3 generate_asset.py --source ./logo.png --instructions "Make it blue" \
+        --output ./logo.png [options]
 
     # Multi-size favicon with .ico:
     python3 generate_asset.py --prompt "..." --output ./public/favicon.png \
@@ -57,6 +62,31 @@ def submit_job(prompt: str, width: int, height: int, fmt: str, background: str) 
     }
     print("Submitting generation job...")
     result = api_post("/generate", payload)
+    job_id = result["job_id"]
+    print(f"Job created: {job_id}")
+    return job_id
+
+
+def submit_modify_job(
+    source_path: str, instructions: str, fmt: str, background: str,
+    width: int | None = None, height: int | None = None,
+) -> str:
+    with open(source_path, "rb") as f:
+        source_b64 = base64.b64encode(f.read()).decode("ascii")
+    source_format = "webp" if source_path.lower().endswith(".webp") else "png"
+    payload = {
+        "source_image": source_b64,
+        "instructions": instructions,
+        "source_format": source_format,
+        "format": fmt,
+        "background": background,
+    }
+    if width is not None:
+        payload["width"] = width
+    if height is not None:
+        payload["height"] = height
+    print("Submitting modification job...")
+    result = api_post("/modify", payload)
     job_id = result["job_id"]
     print(f"Job created: {job_id}")
     return job_id
@@ -157,16 +187,29 @@ def generate_ico(image_bytes: bytes, output_path: str):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate a brand asset via BrandKit API")
-    parser.add_argument("--prompt", required=True, help="Image generation prompt")
+    parser = argparse.ArgumentParser(description="Generate or modify a brand asset via BrandKit API")
+    parser.add_argument("--prompt", default=None, help="Image generation prompt (for new images)")
+    parser.add_argument("--source", default=None, help="Path to source image to modify (triggers modify mode)")
+    parser.add_argument("--instructions", default=None, help="Modification instructions (required with --source)")
     parser.add_argument("--output", required=True, help="Output file path")
-    parser.add_argument("--width", type=int, default=1024, help="Image width (512-4096, default 1024)")
-    parser.add_argument("--height", type=int, default=1024, help="Image height (512-4096, default 1024)")
+    parser.add_argument("--width", type=int, default=None, help="Image width (512-4096)")
+    parser.add_argument("--height", type=int, default=None, help="Image height (512-4096)")
     parser.add_argument("--format", dest="fmt", default="png", choices=["png", "webp"], help="Output format (default png)")
     parser.add_argument("--background", default="opaque", choices=["transparent", "opaque"], help="Background type (default opaque)")
     parser.add_argument("--sizes", default=None, help="Comma-separated list of sizes to resize to (e.g., 16,32,180,192,512)")
     parser.add_argument("--ico", action="store_true", help="Also generate a .ico file (requires --sizes with 16 and 32)")
     args = parser.parse_args()
+
+    # Validate mode: either --prompt (generate) or --source + --instructions (modify)
+    if args.source and args.prompt:
+        print("Cannot use both --prompt and --source. Use --prompt for new images or --source + --instructions to modify.", file=sys.stderr)
+        sys.exit(1)
+    if args.source and not args.instructions:
+        print("--source requires --instructions", file=sys.stderr)
+        sys.exit(1)
+    if not args.source and not args.prompt:
+        print("Either --prompt or --source + --instructions is required", file=sys.stderr)
+        sys.exit(1)
 
     sizes = None
     if args.sizes:
@@ -176,8 +219,19 @@ def main():
         print("--ico requires --sizes to include 16 and 32", file=sys.stderr)
         sys.exit(1)
 
+    # Default dimensions for generate mode
+    width = args.width if args.width is not None else (1024 if not args.source else None)
+    height = args.height if args.height is not None else (1024 if not args.source else None)
+
     try:
-        job_id = submit_job(args.prompt, args.width, args.height, args.fmt, args.background)
+        if args.source:
+            job_id = submit_modify_job(
+                args.source, args.instructions, args.fmt, args.background,
+                width=width, height=height,
+            )
+        else:
+            job_id = submit_job(args.prompt, width, height, args.fmt, args.background)
+
         result = poll_job(job_id)
         img = result["result"]
         image_bytes = save_image(img["image_data"], args.output)

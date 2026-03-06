@@ -1,22 +1,24 @@
 ---
 name: create-brandkit
 description: >
-  Generate logos, icons, favicons, banners, and other brand/visual assets using
-  the BrandKit image-generation API. Use this skill whenever the user asks you to
-  create, generate, or design a logo, app icon, favicon, banner, hero image,
-  brand asset, or any visual graphic for their project. Also trigger when the user
-  mentions "brandkit", "brand kit", or asks for image generation for branding
-  purposes. Even if the user just says "add a logo" or "I need an icon for my
-  app", use this skill — any time visual asset creation is needed while building
-  an application, this is the right tool. Do NOT use this skill for editing
-  existing images, screenshots, or non-branding image tasks.
+  Generate, modify, and iterate on logos, icons, favicons, banners, and other
+  brand/visual assets using the BrandKit image-generation API. Use this skill
+  whenever the user asks you to create, generate, design, edit, or refine a
+  logo, app icon, favicon, banner, hero image, brand asset, or any visual
+  graphic for their project. Also trigger when the user mentions "brandkit",
+  "brand kit", or asks for image generation for branding purposes. Even if the
+  user just says "add a logo" or "I need an icon for my app", use this skill —
+  any time visual asset creation is needed while building an application, this
+  is the right tool. Do NOT use this skill for screenshots or non-branding
+  image tasks.
 ---
 
 # BrandKit — AI Image Generation for Brand Assets
 
 Generate professional logos, icons, favicons, and banners via the BrandKit API.
 The API uses Google Gemini to produce images from text prompts and returns them
-as base64-encoded data that you save directly to the project.
+as base64-encoded data. Assets are staged in a `./brandkit/` folder for review
+before being deployed to the project.
 
 ## Phase 1 — Gather Brand Context
 
@@ -42,8 +44,8 @@ in tailwind.config.ts — I'll use those for the assets."
 ### 1b. Handle reference images
 
 If the user points to an existing image and says "make it look like this" or
-"match this style", the API is text-only — it can't accept reference images.
-Instead:
+"match this style", the generation API is text-only — it can't accept reference
+images. Instead:
 
 1. Read/view the reference image yourself
 2. Describe its key visual elements in words: style (flat, gradient, 3D),
@@ -53,26 +55,97 @@ Instead:
 Tell the user: "I can't send the reference image directly to the API, but I'll
 describe its style in the prompt to get a similar result."
 
+Note: the `/modify` endpoint *does* accept an existing image for iterative
+refinement — but this is for modifying previously generated assets, not for
+using a reference image as a style guide.
+
 ### 1c. Ask what's needed
 
 If the user's request is specific (e.g., "generate a blue minimalist logo for my
 todo app"), you already have enough — skip to Phase 2.
 
 If the request is open-ended (e.g., "add branding to my app" or "I need a logo"),
-ask a few short questions. Don't overwhelm — keep it to what you actually need:
+use the **AskUserQuestion** tool to gather preferences. This presents interactive
+options the user can click on (they can always pick "Other" to give a custom
+answer). The tool supports 1–4 questions per call with 2–4 options each.
 
-1. **Which assets?** — "Do you want just a logo, or a full set (logo, favicon,
-   app icon, banner)?"
-2. **Style** (if not found in project) — "Any style preference? (minimal/flat,
-   modern/gradient, bold/playful, elegant/serif)"
-3. **Colors** (if not found in project) — "Any brand colors in mind, or should I
-   pick something that fits the app?"
-4. **Subject/symbol** — "Any specific symbol or imagery? (e.g., a mountain, a
-   lightning bolt, the letter 'A')"
-5. **Text on logo?** — "Should the logo include the app name, or be icon-only?"
+**Call AskUserQuestion with these questions** (skip any the user already answered
+or that the project's design files already answer):
 
-Skip questions the user already answered or that the project's design files
-already answer. One round of questions is enough — don't over-interview.
+```
+Question 1:
+  header: "Assets"
+  question: "Which assets should I generate?"
+  multiSelect: false
+  options:
+    - label: "Just a logo"
+      description: "A single logo image"
+    - label: "Logo + favicon"
+      description: "Logo and favicon with standard sizes (16, 32, 180, 192, 512) plus .ico"
+    - label: "Full brand kit (Recommended)"
+      description: "Logo, favicon, app icon, and banner — everything you need"
+
+Question 2 (skip if colors found in project):
+  header: "Colors"
+  question: "What color direction should I go with?"
+  multiSelect: false
+  options:
+    - label: "Blues"
+      description: "Trust, professional, calm"
+    - label: "Greens"
+      description: "Growth, nature, health"
+    - label: "Purples"
+      description: "Creative, premium, modern"
+    - label: "You pick"
+      description: "I'll choose colors that fit the app's purpose"
+
+Question 3 (skip if style found in project):
+  header: "Style"
+  question: "What visual style do you prefer?"
+  multiSelect: false
+  options:
+    - label: "Minimal / flat"
+      description: "Clean lines, solid colors, simple shapes"
+    - label: "Modern / gradient"
+      description: "Smooth gradients, depth, contemporary feel"
+    - label: "Bold / playful"
+      description: "Bright colors, fun shapes, energetic"
+    - label: "Elegant / refined"
+      description: "Serif fonts, muted tones, sophisticated"
+
+Question 4:
+  header: "Symbol"
+  question: "What symbol or imagery should the logo use?"
+  multiSelect: false
+  options:
+    - label: "Letter / monogram"
+      description: "First letter of the app name as the icon"
+    - label: "Abstract shape"
+      description: "Geometric forms, swooshes, or patterns"
+    - label: "You suggest"
+      description: "Pick a symbol that fits the app's purpose"
+```
+
+If you need to ask about text on the logo (only when the user seems to want text),
+ask in a separate follow-up call:
+
+```
+  header: "Text"
+  question: "Should the logo include the app name?"
+  multiSelect: false
+  options:
+    - label: "Icon only (Recommended)"
+      description: "No text — AI text rendering can be inconsistent with letter accuracy"
+    - label: "Include app name"
+      description: "Add the app name — may need a few attempts to get letters right"
+```
+
+**Important:** Always default to icon-only. Only ask the text question if the
+user mentions wanting text on the logo — otherwise skip it and assume icon-only.
+
+You can split these across multiple AskUserQuestion calls if needed — for
+example, ask Assets + Colors first, then Style + Symbol in a second round. But
+keep the total number of rounds to 2 at most. Don't over-interview.
 
 **Default to icon-only unless the user asks for text.** AI image generation
 handles text inconsistently — letters often come out distorted or misspelled.
@@ -82,7 +155,9 @@ prompt. Be upfront that text rendering may need a few attempts.
 
 ### 1d. Determine output locations
 
-Figure out where assets should be saved based on the project structure:
+Figure out where assets should **ultimately** be deployed based on the project
+structure. These are the *final destinations* — during generation, assets will
+be staged in `./brandkit/` first.
 
 | Framework / Structure     | Assets directory        |
 |--------------------------|------------------------|
@@ -96,13 +171,18 @@ Figure out where assets should be saved based on the project structure:
 
 Check for an existing assets directory first. If one exists, use it.
 
-## Phase 2 — Generate Assets
+## Phase 2 — Generate Assets to Staging
+
+All assets are generated into a `./brandkit/` staging folder — **never directly
+to final project locations**. This gives the user a chance to review and request
+changes before assets go live.
 
 ### API Reference
 
 **Base URL:** `https://brandkit-api.fly.dev`
 
-**Submit a job:**
+#### Submit a generation job
+
 ```bash
 curl -s -X POST https://brandkit-api.fly.dev/generate \
   -H "Content-Type: application/json" \
@@ -125,7 +205,34 @@ curl -s -X POST https://brandkit-api.fly.dev/generate \
 
 **Response (202):** `{"job_id": "...", "status": "pending", "poll_url": "/jobs/{job_id}"}`
 
-**Poll for result:**
+#### Submit a modification job
+
+```bash
+curl -s -X POST https://brandkit-api.fly.dev/modify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source_image": "<base64-encoded-image>",
+    "instructions": "Change the color from blue to purple",
+    "source_format": "png",
+    "format": "png",
+    "background": "transparent"
+  }'
+```
+
+| Field           | Type   | Default    | Constraints                      |
+|----------------|--------|------------|----------------------------------|
+| `source_image`  | string | required   | base64-encoded source image      |
+| `instructions`  | string | required   | what to change                   |
+| `source_format` | string | `"png"`    | `"png"` or `"webp"`             |
+| `width`         | int    | null       | 512–4096, null = keep source dims |
+| `height`        | int    | null       | 512–4096, null = keep source dims |
+| `format`        | string | `"png"`    | `"png"` or `"webp"`             |
+| `background`    | string | `"opaque"` | `"transparent"` or `"opaque"`   |
+
+**Response (202):** `{"job_id": "...", "status": "pending", "poll_url": "/jobs/{job_id}"}`
+
+#### Poll for result
+
 ```bash
 curl -s https://brandkit-api.fly.dev/jobs/{job_id}
 ```
@@ -143,23 +250,41 @@ It handles submit → poll → decode → save in one command.
 **Important:** Use `python3` on macOS/Linux and `python` on Windows. Check which
 is available on the current platform before running.
 
+#### Generate a new image
+
 ```bash
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A flat, minimal app icon of a lightning bolt in purple and white" \
-  --output ./public/logo.png \
+  --output ./brandkit/logo.png \
   --width 512 --height 512 \
   --format png \
   --background transparent
 ```
 
-**Multi-size icon generation** — use `--sizes` to generate one image and resize
-it to multiple sizes in a single call. This is ideal for favicons and app icons
-that need several size variants:
+#### Modify an existing image
+
+```bash
+python3 <SKILL_DIR>/scripts/generate_asset.py \
+  --source ./brandkit/logo.png \
+  --instructions "Change the color scheme to deeper blue tones" \
+  --output ./brandkit/logo.png \
+  --format png \
+  --background transparent
+```
+
+When `--source` is provided, the script reads the file, base64-encodes it, and
+sends it to `/modify` instead of `/generate`. Width/height default to the source
+image dimensions if not specified.
+
+#### Multi-size icon generation
+
+Use `--sizes` to generate one image and resize it to multiple sizes in a single
+call. Ideal for favicons and app icons:
 
 ```bash
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A bold, simple checkmark icon in blue, recognizable at small sizes" \
-  --output ./public/favicon.png \
+  --output ./brandkit/favicon.png \
   --width 512 --height 512 \
   --format png \
   --background transparent \
@@ -170,13 +295,15 @@ This generates at 512x512, then creates resized copies:
 `favicon-16x16.png`, `favicon-32x32.png`, `favicon-180x180.png`,
 `favicon-192x192.png`, and keeps the original as `favicon.png` (512x512).
 
-**ICO file generation** — add `--ico` to also produce a `.ico` file combining
-the 16x16 and 32x32 sizes (requires `--sizes` to include 16 and 32):
+#### ICO file generation
+
+Add `--ico` to also produce a `.ico` file combining the 16x16 and 32x32 sizes
+(requires `--sizes` to include 16 and 32):
 
 ```bash
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A bold, simple checkmark icon in blue" \
-  --output ./public/favicon.png \
+  --output ./brandkit/favicon.png \
   --width 512 --height 512 \
   --format png \
   --background transparent \
@@ -184,11 +311,9 @@ python3 <SKILL_DIR>/scripts/generate_asset.py \
   --ico
 ```
 
-This creates everything above plus `favicon.ico`.
-
 Replace `<SKILL_DIR>` with the absolute path to this skill's directory.
-All flags except `--prompt` and `--output` are optional (defaults: 1024x1024,
-png, opaque). Exits 0 on success, 1 on failure.
+All flags except `--output` and either `--prompt` or `--source`+`--instructions`
+are optional (defaults: 1024x1024, png, opaque). Exits 0 on success, 1 on failure.
 
 ### Prompt Templates by Asset Type
 
@@ -281,40 +406,107 @@ two short words maximum, and be prepared to iterate.
 
 When the user wants a full brand kit, generate all assets in parallel by running
 multiple script invocations simultaneously. Use the same style/color language in
-every prompt for consistency.
+every prompt for consistency. **All outputs go to `./brandkit/`.**
 
 Example — full brand kit for "TaskFlow", a productivity app in blue tones:
 ```bash
 # Run all of these in parallel
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A flat, minimal vector logo of a flowing checkmark in sky blue and white, for a productivity app. Clean, professional, centered composition. No text, icon only." \
-  --output ./public/logo.png --width 1024 --height 1024 --format png --background transparent
+  --output ./brandkit/logo.png --width 1024 --height 1024 --format png --background transparent
 
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A flat, minimal app icon of a flowing checkmark in sky blue and white, simple and recognizable at small sizes, within a rounded square, for TaskFlow" \
-  --output ./public/icon-512.png --width 512 --height 512 --format png --background transparent
+  --output ./brandkit/icon-512.png --width 512 --height 512 --format png --background transparent
 
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A bold, simple flowing checkmark in sky blue, minimal detail, must be recognizable at 32x32 pixels. No text, no fine details." \
-  --output ./public/favicon.png --width 512 --height 512 --format png --background transparent \
+  --output ./brandkit/favicon.png --width 512 --height 512 --format png --background transparent \
   --sizes 16,32,180,192,512 --ico
 
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A wide, modern banner with a subtle gradient from sky blue to white, featuring a small flowing checkmark on the left, clean and inviting, for TaskFlow productivity app" \
-  --output ./public/banner.webp --width 2048 --height 1024 --format webp --background opaque
+  --output ./brandkit/banner.webp --width 2048 --height 1024 --format webp --background opaque
 ```
 
-## Phase 3 — Verify and Refine
+## Phase 3 — Review, Iterate, and Deploy
 
-After generating:
+After generating assets into `./brandkit/`, present them for user review. **Never
+move assets to final locations without explicit user approval.**
 
-1. **Read/display the generated images** so the user can see what was created
-2. **Report what was generated** — list each file, its dimensions, and file size
-3. **Ask if adjustments are needed** — "How do these look? Want me to adjust
-   colors, style, or regenerate any of them?"
+### 3a. Present for review
 
-If the user wants changes, regenerate just the specific assets with an updated
-prompt. Don't regenerate everything unless asked.
+1. **Read/display each generated image** from `./brandkit/` so the user can see
+   what was created
+2. **List what was generated** — show each file, its dimensions, file size, and
+   intended final destination
+3. **Ask for approval** using **AskUserQuestion**:
+
+```
+Question 1:
+  header: "Review Assets"
+  question: "Here are the generated brand assets. What would you like to do?"
+  multiSelect: false
+  options:
+    - label: "Approve all and deploy"
+      description: "Move all assets to their final project locations"
+    - label: "Modify specific assets"
+      description: "I'll tell you which ones to change and how"
+    - label: "Regenerate all"
+      description: "Start over with a different direction"
+```
+
+### 3b. Iterate on specific assets
+
+If the user wants to modify specific assets:
+
+1. Ask which asset(s) to change and what changes they want (or they may have
+   already said, e.g., "make the logo more blue")
+2. Use the `--source` + `--instructions` mode to send the existing asset back
+   to the API with modification instructions:
+
+```bash
+python3 <SKILL_DIR>/scripts/generate_asset.py \
+  --source ./brandkit/logo.png \
+  --instructions "Change the color scheme to deeper blue tones, keep the same shape" \
+  --output ./brandkit/logo.png \
+  --format png --background transparent
+```
+
+3. Show the updated asset to the user
+4. Ask again: approve or keep iterating? Repeat until satisfied.
+
+For favicon modifications, regenerate the base image, then re-run the `--sizes`
+and `--ico` flags to update all size variants:
+
+```bash
+python3 <SKILL_DIR>/scripts/generate_asset.py \
+  --source ./brandkit/favicon.png \
+  --instructions "Simplify the shape, use bolder lines" \
+  --output ./brandkit/favicon.png \
+  --format png --background transparent \
+  --sizes 16,32,180,192,512 --ico
+```
+
+If the user wants to completely re-do an asset (not modify the existing one),
+use `--prompt` instead of `--source` to generate fresh.
+
+### 3c. Deploy approved assets
+
+Once the user approves:
+
+1. **Copy each file** from `./brandkit/` to its final destination. For example:
+   - `./brandkit/logo.png` → `./public/logo.png`
+   - `./brandkit/favicon.png` → `./public/favicon.png`
+   - `./brandkit/favicon-16x16.png` → `./public/favicon-16x16.png`
+   - `./brandkit/favicon.ico` → `./public/favicon.ico`
+   - `./brandkit/banner.webp` → `./public/banner.webp`
+
+2. **Update framework-specific config** if applicable (e.g., favicon links in
+   `index.html`, `manifest.json` for PWA icons)
+
+3. **Ask about cleanup**: "Assets are deployed. Want me to delete the
+   `./brandkit/` staging folder, or keep it for future reference?"
 
 ## Error Handling
 
