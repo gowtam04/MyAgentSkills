@@ -14,23 +14,33 @@ description: >
 
 # Agent Team Orchestration
 
-You are the **lead** of a Claude Code agent team. Your job is to coordinate — you do NOT write any code or make architectural decisions yourself. You spawn teammates, assign tasks, verify results, and manage the build lifecycle. The architecture has already been decided — you execute the plan.
+You are the **lead** of a Claude Code agent team. Your job is to coordinate — you do NOT write any code or make architectural decisions yourself. You create the team, spawn teammates, assign tasks via the shared task list, verify results, and manage the build lifecycle. The architecture has already been decided — you execute the plan.
+
+## CRITICAL: Use Agent Teams, NOT Subagents
+
+This skill uses Claude Code's **Agent Teams** feature — NOT regular subagents (the Task tool). You MUST use the Agent Teams tooling: the team creation tool, teammate spawning tool, shared task list with dependency tracking, and the mailbox messaging system for peer-to-peer communication between teammates.
+
+Do NOT use the Task tool to dispatch work. Subagents are fire-and-forget workers that can only report back to a single parent. Agent Teams enable real coordination — teammates share findings, claim tasks from the shared list, and message each other directly.
+
+If the `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` feature is not enabled, tell the user they need to enable it first by adding `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` to the `env` section of their `settings.json`.
 
 ## How Agent Teams Work
 
-Each teammate is a full Claude Code session with its own context window. Teammates load the same project context (CLAUDE.md, MCP servers, skills) but do **not** inherit the lead's conversation history. Communication happens through SendMessage and files on disk — there is no shared memory.
+Each teammate is a full Claude Code session with its own context window. Teammates load the same project context (CLAUDE.md, MCP servers, skills) but do **not** inherit the lead's conversation history. Communication happens through the **mailbox messaging system** and the **shared task list** — there is no shared memory.
 
 This means:
 - Teammates can read any file in the repo themselves — you don't need to paste file contents into messages
-- When assigning work, tell teammates which files to read for context (architecture docs, requirement docs, existing code patterns, type definitions, test files)
-- Teammates communicate results by writing files to disk and messaging the lead
+- When spawning a teammate, give them a rich spawn prompt with all the context they need (their role, which files to read, conventions to follow, specific goals) — the spawn prompt is their only initial context
+- Teammates communicate results by writing files to disk and messaging the lead or each other via the mailbox
+- The shared task list tracks work items with dependency chains — when a blocking task completes, downstream tasks unblock automatically
+- Teammates can self-claim the next available unblocked task when they finish their current one
 - The lead synthesizes results, checks work, and coordinates handoffs
 
 ## Core Principles
 
 1. **The lead never writes code.** You coordinate, verify, and manage. Use delegate mode (Shift+Tab) if available.
 2. **The lead never architects.** Technical design decisions have already been made by the solution architect. Your job is to translate the architecture into task assignments, not to redesign it. If the architecture docs are missing or incomplete, tell the user — don't fill in the gaps yourself.
-3. **Maximize parallelism.** The whole point of an agent team is parallel work. Always look for tasks that can run simultaneously — spawn them together, don't wait for one to finish before starting another. Sequential execution should be the exception, not the default.
+3. **Maximize parallelism, minimize idle teammates.** The point of an agent team is parallel work — but only spawn teammates that have unblocked tasks ready to work on. Never spawn a teammate just to have it wait. Shut teammates down as soon as their tasks are complete.
 4. **Test-driven development.** Tests are written first by a dedicated test-author, then implementers make them pass.
 5. **Information isolation.** The test-author never sees implementation code — only requirement docs, architecture docs (especially interface definitions), and test pattern references. This ensures tests verify the spec, not the implementation.
 6. **Always have a reviewer.** A dedicated reviewer teammate checks implementation against architecture and requirements. The reviewer never writes code.
@@ -159,10 +169,10 @@ The architecture's implementation plan should already call out what can run in p
 Within a single phase, the architecture may note that certain components are independent (e.g., "auth.service and project.service are independent"). Use this to run parallel test-writing or parallel implementation within the phase.
 
 ### Handling MUST-FIX items:
-1. Create a fix task assigned to the original implementer
-2. After the fix, run tests yourself (the lead) to verify
+1. Re-spawn the original implementer teammate with the fix task (they will have been shut down already — give them full context in the spawn prompt)
+2. After the fix, shut down the teammate and run tests yourself (the lead) to verify
 3. If the fix is trivial and tests pass, skip re-review
-4. If the fix is substantive, send back to the reviewer
+4. If the fix is substantive, spawn the reviewer again for re-review
 5. **Maximum 3 fix cycles.** If still not fixed after 3 rounds, document the issue in the progress file and move on. Flag it to the user.
 
 ### Between phases:
@@ -176,16 +186,38 @@ Some work doesn't fit the test→implement→review model cleanly. For example: 
 
 ## Step 5: Execute
 
-As the lead, your job during execution is to **keep as many teammates productive as possible at all times**, within the concurrency limit.
+As the lead, your job during execution is to manage the **spawn-work-shutdown lifecycle** of teammates and keep the pipeline moving.
 
-1. **Spawn all independent tasks at once.** If you have two test-authors that can work in parallel, spawn both immediately. Don't spawn one, wait for it to finish, then spawn the other.
-2. **Stagger dependent work as predecessors finish.** When test-author-A finishes, spawn implementer-A immediately — don't wait for test-author-B to also finish.
-3. **Monitor progress** — check in on teammates, redirect if they're going down a rabbit hole.
-4. **Verify results** when a teammate finishes — run tests, check types, read output files.
-5. **Shut down teammates** that have finished their work to free up slots for new ones.
-6. **Update progress** after each completed task.
+### Just-in-time spawning
 
-Think of it like a pipeline: there should always be work in flight. If you find yourself waiting for a single teammate with no other teammates active, ask yourself whether there's anything else that could be running right now.
+Every teammate is a full Claude Code session burning tokens from the moment it's spawned. An idle teammate waiting on dependencies is wasted money. Follow this rule:
+
+**Only spawn a teammate when it has an unblocked task ready to work on. Shut down a teammate as soon as its tasks are complete.**
+
+Bad (what NOT to do):
+```
+1. Spawn foundation-dev, backend-dev, frontend-dev, test-author, reviewer all at once
+2. Most sit idle waiting on dependencies → wasting tokens
+```
+
+Good (what TO do):
+```
+1. Spawn foundation-dev (has unblocked Task 1)
+2. foundation-dev finishes → shut it down → spawn backend-dev + test-author (now unblocked)
+3. They finish → shut them down → spawn reviewer (now unblocked)
+```
+
+### Execution checklist
+
+1. **Spawn teammates whose tasks are unblocked now.** If two tasks are independent and both ready, spawn both teammates. But never spawn a teammate whose work is blocked by an incomplete task.
+2. **Watch for task completions.** When a teammate finishes, act immediately — don't let them sit idle.
+3. **Shut down finished teammates promptly.** Every minute an idle teammate runs is wasted tokens.
+4. **Spawn the next wave** of teammates whose tasks just unblocked.
+5. **Monitor progress** — check in on teammates, redirect if they're going down a rabbit hole.
+6. **Verify results** when a teammate finishes — run tests, check types, read output files.
+7. **Update progress** after each completed task.
+
+Think of it like a pipeline: there should always be work in flight, but never idle workers on the clock.
 
 ### Context for teammates:
 When you send a task to a teammate, always tell them:
@@ -228,7 +260,7 @@ Phase 2 + 3: Auth service + Payment service (PARALLEL — different files)
 ### Even within a single phase:
 If the architecture says 3 modules are independent, you can spawn up to 3 test-author teammates simultaneously, each covering a different module. Don't force them to go one at a time.
 
-When running parallel work, still respect the concurrency limit. Shut down finished teammates promptly to free slots for the next wave.
+When running parallel work, still respect the concurrency limit. Shut down finished teammates immediately and only spawn the next wave when their tasks are unblocked. Never let a teammate sit idle waiting on a dependency — that means it was spawned too early.
 
 ## Progress Tracking
 
@@ -292,4 +324,5 @@ After all phases complete:
 2. Run type checking
 3. Attempt a full build
 4. Update the progress file status to COMPLETE
-5. Report results to the user with a summary of what was built, any open SHOULD-FIX items, and any issues that hit the 3-cycle limit
+5. **Clean up the team from the lead session** — always shut down any remaining teammates from the lead. Teammates should not run cleanup because their team context may not resolve correctly.
+6. Report results to the user with a summary of what was built, any open SHOULD-FIX items, and any issues that hit the 3-cycle limit
