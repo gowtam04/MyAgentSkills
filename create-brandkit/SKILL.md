@@ -83,7 +83,7 @@ Question 1:
     - label: "Logo + favicon"
       description: "Logo and favicon with standard sizes (16, 32, 180, 192, 512) plus .ico"
     - label: "Full brand kit (Recommended)"
-      description: "Logo, favicon, app icon, and banner — everything you need"
+      description: "Logo, favicon, and banner — app icon is auto-derived from the logo"
 
 Question 2 (skip if colors found in project):
   header: "Colors"
@@ -176,6 +176,14 @@ Check for an existing assets directory first. If one exists, use it.
 All assets are generated into a `./brandkit/` staging folder — **never directly
 to final project locations**. This gives the user a chance to review and request
 changes before assets go live.
+
+**Important — app icon = resized logo:** By default, the app icon is the logo
+resized to 512x512 — do NOT generate it as a separate API call. Generating the
+logo and app icon independently produces similar-but-not-identical results that
+look inconsistent. Instead, generate the logo at 1024x1024 with `--sizes 512`
+and rename the resized copy to your app icon. Only generate a standalone app
+icon via a separate API call if the user explicitly asks for an app icon that
+looks different from their logo.
 
 ### API Reference
 
@@ -341,7 +349,14 @@ text 'LearnHub' in a clean, modern sans-serif font, in teal and warm yellow."
 Note: text rendering is unreliable — letters may be distorted. Warn the user and
 be prepared to regenerate.
 
-**App icon:**
+**App icon (derived from logo — the default):**
+
+Do NOT generate the app icon as a separate API call. Instead, generate the logo
+at 1024x1024 with `--sizes 512` and rename the 512x512 copy to your icon file
+(e.g., `mv ./brandkit/logo-512x512.png ./brandkit/icon-512.png`). This ensures
+the logo and app icon are identical, just at different sizes.
+
+**App icon (standalone — only if user explicitly requests a different icon):**
 ```
 A [style] app icon of [simplified subject], in [brand colors], simple and
 recognizable at small sizes. [shape constraint like "within a rounded square"]
@@ -349,8 +364,10 @@ recognizable at small sizes. [shape constraint like "within a rounded square"]
 Example: "A modern, geometric app icon of a stylized book in teal on white,
 simple and recognizable at small sizes, within a rounded square."
 
-Compared to a logo, app icons should have fewer details and bolder shapes since
-they'll be viewed at small sizes on phone screens.
+Only use this template when the user explicitly asks for an app icon that looks
+different from the logo. Compared to a logo, standalone app icons should have
+fewer details and bolder shapes since they'll be viewed at small sizes on phone
+screens.
 
 **Favicon:**
 ```
@@ -387,7 +404,7 @@ two short words maximum, and be prepared to iterate.
 
 | Asset Type       | Width | Height | Notes                              |
 |-----------------|-------|--------|------------------------------------|
-| App icon         | 512   | 512    | Square, works for PWA/mobile       |
+| App icon         | 512   | 512    | Derived from logo resize (not generated separately) |
 | Logo (standard)  | 1024  | 1024   | Square, high-res                   |
 | Logo (wide)      | 2048  | 1024   | Horizontal/landscape orientation   |
 | Favicon          | 512   | 512    | Generate large, resize down with --sizes |
@@ -411,13 +428,11 @@ every prompt for consistency. **All outputs go to `./brandkit/`.**
 Example — full brand kit for "TaskFlow", a productivity app in blue tones:
 ```bash
 # Run all of these in parallel
+# Logo at 1024x1024 + auto-generate a 512x512 copy for the app icon
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A flat, minimal vector logo of a flowing checkmark in sky blue and white, for a productivity app. Clean, professional, centered composition. No text, icon only." \
-  --output ./brandkit/logo.png --width 1024 --height 1024 --format png --background transparent
-
-python3 <SKILL_DIR>/scripts/generate_asset.py \
-  --prompt "A flat, minimal app icon of a flowing checkmark in sky blue and white, simple and recognizable at small sizes, within a rounded square, for TaskFlow" \
-  --output ./brandkit/icon-512.png --width 512 --height 512 --format png --background transparent
+  --output ./brandkit/logo.png --width 1024 --height 1024 --format png --background transparent \
+  --sizes 512
 
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A bold, simple flowing checkmark in sky blue, minimal detail, must be recognizable at 32x32 pixels. No text, no fine details." \
@@ -427,6 +442,11 @@ python3 <SKILL_DIR>/scripts/generate_asset.py \
 python3 <SKILL_DIR>/scripts/generate_asset.py \
   --prompt "A wide, modern banner with a subtle gradient from sky blue to white, featuring a small flowing checkmark on the left, clean and inviting, for TaskFlow productivity app" \
   --output ./brandkit/banner.webp --width 2048 --height 1024 --format webp --background opaque
+```
+
+After the logo generation completes, rename the resized copy to the app icon:
+```bash
+mv ./brandkit/logo-512x512.png ./brandkit/icon-512.png
 ```
 
 ## Phase 3 — Review, Iterate, and Deploy

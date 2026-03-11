@@ -141,6 +141,9 @@ Tell the test-author:
 
 CRITICAL: Never point the test-author at implementation files. Only: requirement docs, architecture docs (interface definitions, data model, component descriptions), and test pattern references.
 
+**Phase N.1.5 — Verify tests fail (lead does this, not a teammate)**
+Before spawning the implementer, run the new test suite yourself. Every new test should **fail**. This is the RED step of TDD — it confirms the tests are actually testing something that doesn't exist yet. If any new tests pass before implementation, they're either testing the wrong thing or the functionality already exists. Investigate before proceeding.
+
 **Phase N.2 — Implement** (assign to implementer, BLOCKED by N.1)
 Tell the implementer:
 - Which architecture docs to read — component design, file structure, technical decisions, interface definitions
