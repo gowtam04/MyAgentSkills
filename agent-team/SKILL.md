@@ -41,17 +41,21 @@ This means:
 1. **The lead never writes code.** You coordinate, verify, and manage. Use delegate mode (Shift+Tab) if available.
 2. **The lead never architects.** Technical design decisions have already been made by the solution architect. Your job is to translate the architecture into task assignments, not to redesign it. If the architecture docs are missing or incomplete, tell the user — don't fill in the gaps yourself.
 3. **Maximize parallelism, minimize idle teammates.** The point of an agent team is parallel work — but only spawn teammates that have unblocked tasks ready to work on. Never spawn a teammate just to have it wait. Shut teammates down as soon as their tasks are complete.
-4. **Test-driven development.** Tests are written first by a dedicated test-author, then implementers make them pass.
-5. **Information isolation.** The test-author never sees implementation code — only requirement docs, architecture docs (especially interface definitions), and test pattern references. This ensures tests verify the spec, not the implementation.
-6. **Always have a reviewer.** A dedicated reviewer teammate checks implementation against architecture and requirements. The reviewer never writes code.
-7. **Progress tracking.** Always maintain a progress file to track the build.
+4. **Test-driven development.** Tests are written first by a dedicated test-author, reviewed for quality, then implementers make them pass.
+5. **Tests get reviewed before implementation.** The reviewer checks test coverage and quality against the architecture before any implementation begins. Weak tests produce weak implementations — catch gaps early.
+6. **Information isolation.** The test-author never sees implementation code — only requirement docs, architecture docs (especially interface definitions), and test pattern references. This ensures tests verify the spec, not the implementation. The integration-tester is the exception — they need to see implementation to test cross-component seams.
+7. **Always have a reviewer.** A dedicated reviewer teammate checks both tests (before implementation) and implementation (after). The reviewer never writes code.
+8. **Regression testing between phases.** After every phase, the lead runs ALL tests from ALL completed phases — not just the current one. Later phases can break earlier work, and catching regressions immediately is critical.
+9. **Integration testing at seams.** Unit tests verify individual components; integration tests verify they work together. Spawn an integration-tester at natural boundaries where multiple phases connect.
+10. **Document what you build.** A docs teammate writes documentation near the end so it reflects the actual implementation, not just the plan.
+11. **Progress tracking.** Always maintain a progress file to track the build.
 
 ## Step 1: Read the Blueprint
 
 Before creating any teammates, read and understand the existing documentation. Check these locations in order:
 
 ### Architecture docs (primary input)
-If the user points you to a specific directory for architecture docs, use that. Otherwise, look in `/docs/architecture/` as the default location. This is your primary source of truth. You should find:
+If the user points you to a specific directory for architecture docs, use that. Otherwise, look in `/docs/features/{feature-name}/architecture/` (for feature work) or `/docs/architecture/` (for new applications) as the default location. This is your primary source of truth. You should find:
 - **Component design** — what components exist, their responsibilities, and their interfaces
 - **File structure** — every file that needs to be created, with purposes. This is your ownership map for assigning work to teammates.
 - **Interface definitions** — contracts between components. These go to your test-author.
@@ -63,7 +67,7 @@ If the user points you to a specific directory for architecture docs, use that. 
 If architecture docs exist, they drive everything. Don't re-derive what's already been decided.
 
 ### Requirements docs (secondary reference)
-Check the architecture docs for a **Requirements Reference** path — it will point to where the business requirements live (this may or may not be `/docs/reqdocs/`). If no path is noted in the architecture docs, check `/docs/reqdocs/` as a fallback. These give you and your teammates the "why" behind what's being built. Useful for:
+Check the architecture docs for a **Requirements Reference** path — it will point to where the business requirements live. Requirements are co-located with architecture under `/docs/features/{feature-name}/requirements/` (for feature work) or `/docs/requirements/` (for new applications). These give you and your teammates the "why" behind what's being built. Useful for:
 - Understanding acceptance criteria for user stories
 - Clarifying business rules when the architecture docs reference them
 - Giving the reviewer context on what the feature is supposed to accomplish from the user's perspective
@@ -95,8 +99,12 @@ Skip pre-flight only for greenfield projects with no existing code.
 Choose teammates based on what the architecture calls for. The implementation phases in the architecture docs tell you what domains are involved — pick roles accordingly.
 
 ### Required roles (always):
-- **test-author**: Writes all tests. Receives requirements docs, architecture docs (especially interface definitions and data model), and test pattern references. NEVER receives implementation code.
-- **reviewer**: Reviews implementation against architecture and requirements. Receives everything — requirements, architecture, tests, AND implementation. Never writes code.
+- **test-author**: Writes all unit/component tests per phase. Receives requirements docs, architecture docs (especially interface definitions and data model), and test pattern references. NEVER receives implementation code.
+- **reviewer**: Reviews tests and implementation against architecture and requirements. Receives everything — requirements, architecture, tests, AND implementation. Never writes code. Also reviews test quality before implementation begins (see Phase N.1.75).
+
+### Specialized roles (use when applicable):
+- **integration-tester**: Writes tests that exercise full workflows across multiple components — the seams between phases. Spawned at natural integration boundaries, not every phase. See "Integration Testing" section below for when and how to use this role. Unlike the test-author, the integration-tester DOES see implementation code — they need to understand what's actually built to test how components interact.
+- **docs**: Updates README, writes API documentation, adds developer guides, and verifies inline documentation quality. Spawned near the end of the build or in parallel with later phases. See "Documentation Pass" section below.
 
 ### Implementation roles (varies by project):
 Pick implementation roles based on the domains in the architecture. The architecture's file structure tells you which files exist and which component they belong to — that's how you decide what roles you need and what each one owns.
@@ -125,7 +133,7 @@ All teammates must use the **user's default selected model**. When spawning team
 The architecture's implementation plan gives you phases with dependencies and parallel opportunities already identified. Translate those phases into the TDD cycle:
 
 ```
-test-author writes tests → implementer makes tests pass → reviewer checks both
+test-author writes tests → lead verifies they fail → reviewer checks test quality → implementer makes tests pass → reviewer checks implementation
 ```
 
 ### Map architecture phases to TDD cycles
@@ -134,27 +142,40 @@ For each phase in the architecture's implementation plan:
 
 **Phase N.1 — Write tests** (assign to test-author)
 Tell the test-author:
-- Which requirement docs/sections to read (from `/docs/reqdocs/`)
-- Which architecture docs to read — especially interface definitions and data model (from `/docs/architecture/`)
+- Which requirement docs/sections to read (from the feature's `requirements/` directory)
+- Which architecture docs to read — especially interface definitions and data model (from the feature's `architecture/` directory)
 - Which existing test files to look at for style/pattern reference
 - What test files to create and what to cover (expected behaviors, edge cases, error conditions per the architecture)
 
 CRITICAL: Never point the test-author at implementation files. Only: requirement docs, architecture docs (interface definitions, data model, component descriptions), and test pattern references.
 
 **Phase N.1.5 — Verify tests fail (lead does this, not a teammate)**
-Before spawning the implementer, run the new test suite yourself. Every new test should **fail**. This is the RED step of TDD — it confirms the tests are actually testing something that doesn't exist yet. If any new tests pass before implementation, they're either testing the wrong thing or the functionality already exists. Investigate before proceeding.
+Before spawning the reviewer, run the new test suite yourself. Every new test should **fail**. This is the RED step of TDD — it confirms the tests are actually testing something that doesn't exist yet. If any new tests pass before implementation, they're either testing the wrong thing or the functionality already exists. Investigate before proceeding.
 
-**Phase N.2 — Implement** (assign to implementer, BLOCKED by N.1)
+**Phase N.1.75 — Review tests** (assign to reviewer, BLOCKED by N.1)
+Before implementation begins, spawn the reviewer to check test quality. Weak tests lead to weak implementations — catching coverage gaps now is far cheaper than catching them after code is written. Tell the reviewer:
+- Which architecture docs to read — especially interface definitions and the data model for this phase
+- Which requirement docs to read — especially acceptance criteria and business rules
+- The test files written in N.1
+- What to check: Do the tests adequately cover the interfaces defined in the architecture? Are edge cases and error conditions tested? Do the tests align with the acceptance criteria in the requirements? Are there obvious gaps — happy paths without corresponding error paths, missing boundary conditions, untested business rules?
+
+The reviewer outputs structured findings:
+- **MUST-FIX**: Missing coverage that would let a bad implementation pass (e.g., no test for a required validation rule, missing error case for a critical endpoint)
+- **SHOULD-FIX**: Test quality improvements (better assertions, clearer test names, additional edge cases)
+
+If there are MUST-FIX items, re-spawn the test-author with the feedback to fix the tests before proceeding to implementation. SHOULD-FIX items can be noted for later. Maximum 2 fix cycles on tests — don't let test perfection block implementation.
+
+**Phase N.2 — Implement** (assign to implementer, BLOCKED by N.1.75)
 Tell the implementer:
 - Which architecture docs to read — component design, file structure, technical decisions, interface definitions
 - Which requirement docs to read for business context
-- Which test files to read (written in N.1)
+- Which test files to read (written in N.1, reviewed in N.1.75)
 - Which existing code files to study for pattern reference
 - What files to create/modify (per the architecture's file structure)
 - Success criteria: tests pass, type checking clean, builds succeed
 - Any technical decisions from the architecture docs that are relevant to their work
 
-**Phase N.3 — Review** (assign to reviewer, BLOCKED by N.2)
+**Phase N.3 — Review implementation** (assign to reviewer, BLOCKED by N.2)
 Tell the reviewer:
 - Which architecture docs to read — the reviewer checks that implementation matches the design
 - Which requirement docs to read — the reviewer checks that the build serves the business need
@@ -180,9 +201,10 @@ Within a single phase, the architecture may note that certain components are ind
 
 ### Between phases:
 After each phase completes (review done, any MUST-FIX resolved):
-1. Verify the work yourself — run tests, check types, try building (whatever is appropriate for the project)
-2. Update the progress tracking file
-3. If green, proceed to the next phase immediately — do NOT wait for user approval
+1. **Run the FULL test suite — all phases, not just the current one.** Phase 5 can easily break something from Phase 2. Run every test from every completed phase to catch regressions early. If any previous phase's tests fail, stop and fix the regression before proceeding — re-spawn the relevant implementer with context about what broke and why.
+2. Run type checking and attempt a build (whatever is appropriate for the project)
+3. Update the progress tracking file
+4. If green, proceed to the next phase immediately — do NOT wait for user approval
 
 ### Flexibility:
 Some work doesn't fit the test→implement→review model cleanly. For example: config files, migrations-only work, documentation, infrastructure setup. Be flexible — skip the test step when it doesn't make sense, but still have the reviewer check the work.
@@ -225,8 +247,8 @@ Think of it like a pipeline: there should always be work in flight, but never id
 ### Context for teammates:
 When you send a task to a teammate, always tell them:
 - Their role and what they're responsible for
-- Which architecture docs to read (give file paths in `/docs/architecture/`)
-- Which requirement docs to read if relevant (give file paths in `/docs/reqdocs/`)
+- Which architecture docs to read (give file paths in the feature's `architecture/` directory)
+- Which requirement docs to read if relevant (give file paths in the feature's `requirements/` directory)
 - Which files to study for pattern reference (give file paths)
 - What files to create or modify
 - Clear success criteria
@@ -236,38 +258,85 @@ Since teammates can read files on disk, give them file paths rather than pasting
 
 ## Parallel Execution Examples
 
-### Full-stack app (backend + web + mobile):
+The architecture may produce 5-8+ granular phases. Each phase goes through the TDD cycle (tests → implement → review) before the next begins. Look for parallel opportunities *between* phases that don't depend on each other, and *within* phases where components are independent.
+
+### Full-stack app (many granular phases):
 ```
-Phase 1: Data layer (sequential — everything depends on this)
-  1.1 tests → 1.2 implement → 1.3 review
+Phase 1: Scaffolding (sequential — everything depends on this)
+  1.1 implement → 1.2 review (no tests needed for config/setup)
 
-Phase 2: Backend API (sequential — frontends depend on this)
-  2.1 tests → 2.2 implement → 2.3 review
+Phase 2: Data Model (sequential — all services depend on this)
+  2.1 tests → 2.2 test review → 2.3 implement → 2.4 impl review → regression check
 
-Phase 3 + 4: Web + Mobile (PARALLEL — both depend on Phase 2, not each other)
-  3.1 web tests ──────→ 3.2 web implement ──────→ ┐
-                                                    ├→ review both
-  4.1 mobile tests ──→ 4.2 mobile implement ──→   ┘
+Phase 3: Auth & Permissions (sequential — routes and UI depend on this)
+  3.1 tests → 3.2 test review → 3.3 implement → 3.4 impl review → regression check
+
+Phase 4: Core Business Logic (sequential — API depends on this)
+  4.1 tests → 4.2 test review → 4.3 implement → 4.4 impl review → regression check
+
+Phase 5: API Layer (sequential — frontend depends on this)
+  5.1 tests → 5.2 test review → 5.3 implement → 5.4 impl review → regression check
+
+── Integration checkpoint: spawn integration-tester for backend stack ──
+
+Phase 6 + 7: Frontend Foundation + Feature Screens
+  (PARALLEL if independent — e.g., app shell vs. standalone components)
+  6.1 shell tests ──→ 6.2 test review ──→ 6.3 implement ──→ 6.4 review ──→ ┐
+                                                                              ├→ regression
+  7.1 feature tests ─→ 7.2 test review ─→ 7.3 implement ─→ 7.4 review ─→   ┘
+
+── Integration checkpoint: spawn integration-tester for full E2E ──
+── Documentation: spawn docs teammate (can parallel with integration) ──
+
+Phase 8: Fix integration issues + final review
 ```
 
 ### Backend with independent services:
 ```
-Phase 1: Shared types + data layer (sequential)
+Phase 1: Scaffolding → Phase 2: Data Model (sequential, each with test review cycle)
 
-Phase 2 + 3: Auth service + Payment service (PARALLEL — different files)
-  2.1 auth tests ──→ 2.2 auth implement ──→ ┐
-                                              ├→ review both
-  3.1 pay tests ───→ 3.2 pay implement ───→ ┘
+Phase 3 + 4: Auth service + Payment service (PARALLEL — different files, both depend on Phase 2)
+  3.1 auth tests ──→ 3.2 test review ──→ 3.3 implement ──→ 3.4 review ──→ ┐
+                                                                             ├→ regression
+  4.1 pay tests ───→ 4.2 test review ───→ 4.3 implement ───→ 4.4 review ─→ ┘
+
+Phase 5: API Layer (depends on 3 + 4)
+
+── Integration checkpoint + docs ──
+
+Phase 6: Fix integration issues
 ```
 
-### Even within a single phase:
-If the architecture says 3 modules are independent, you can spawn up to 3 test-author teammates simultaneously, each covering a different module. Don't force them to go one at a time.
+### Adding a feature to an existing app:
+```
+Phase 1: Data Model Changes (sequential)
+  1.1 tests → 1.2 test review → 1.3 implement → 1.4 impl review → regression
+
+Phase 2: Business Logic (sequential)
+  2.1 tests → 2.2 test review → 2.3 implement → 2.4 impl review → regression
+
+Phase 3: API Endpoints (sequential)
+  3.1 tests → 3.2 test review → 3.3 implement → 3.4 impl review → regression
+
+Phase 4: Frontend UI (sequential)
+  4.1 tests → 4.2 test review → 4.3 implement → 4.4 impl review → regression
+
+── Integration tests + docs ──
+
+Phase 5: Fix integration issues + final review
+```
+
+### Within a single phase:
+If the architecture says multiple modules are independent within a phase, you can spawn multiple test-author teammates simultaneously, each covering a different module. Don't force them to go one at a time.
 
 When running parallel work, still respect the concurrency limit. Shut down finished teammates immediately and only spawn the next wave when their tasks are unblocked. Never let a teammate sit idle waiting on a dependency — that means it was spawned too early.
 
+### Many phases doesn't mean slow:
+More phases means each phase is *smaller and faster*. Teammates spin up, do focused work, and shut down quickly. The overhead of more phases is offset by fewer fix cycles (smaller scope = fewer things to go wrong per phase) and clearer verification (you know exactly what each phase should produce).
+
 ## Progress Tracking
 
-Always create and maintain a progress tracking file. Default location: `docs/progress/build-progress.md` (or a project-appropriate path).
+Always create and maintain a progress tracking file. Default location: `docs/features/{feature-name}/progress/build-progress.md` (for feature work) or `docs/progress/build-progress.md` (for new applications).
 
 ```markdown
 # [Feature/Project Name] — Build Progress
@@ -275,8 +344,8 @@ Always create and maintain a progress tracking file. Default location: `docs/pro
 ## Status: IN PROGRESS
 
 ## Architecture Reference
-- Architecture docs: `/docs/architecture/...`
-- Requirements docs: `/docs/reqdocs/...`
+- Architecture docs: `/docs/features/{feature-name}/architecture/...`
+- Requirements docs: `/docs/features/{feature-name}/requirements/...`
 
 ## Phase Tracker
 
@@ -284,15 +353,20 @@ Always create and maintain a progress tracking file. Default location: `docs/pro
 |-------|------|----------|--------|-------|
 | Pre-Flight | — | lead | ⬜ | |
 | 1 | Tests | test-author | ⬜ | |
+| 1 | Test Review | reviewer | ⬜ | |
 | 1 | Implement | [role] | ⬜ | |
-| 1 | Review | reviewer | ⬜ | |
+| 1 | Impl Review | reviewer | ⬜ | |
+| 1 | Regression | lead | ⬜ | |
 | ... | ... | ... | ⬜ | |
+| — | Integration Tests | integration-tester | ⬜ | |
+| — | Documentation | docs | ⬜ | |
+| — | Final Verification | lead | ⬜ | |
 
 ## Test Results
-(test run summaries after each phase)
+(test run summaries after each phase, including regression results)
 
 ## Review Findings
-(MUST-FIX and SHOULD-FIX items per phase)
+(MUST-FIX and SHOULD-FIX items per phase, for both test reviews and implementation reviews)
 
 ## Files Created
 (every new file, listed by phase)
@@ -305,27 +379,90 @@ Use ⬜ (not started), 🔄 (in progress), ✅ (done), ❌ (blocked/failed) for 
 
 ## Common Patterns
 
+The architecture docs will specify the exact phases — always follow their ordering. These are typical patterns to expect. Note that the architect should be producing granular phases (5-8+ for full apps, 3-5 for features), so if you see only 2-3 coarse phases, ask the user if the architecture should be more granular before proceeding.
+
 ### Full-stack web feature:
-Architecture typically phases as: data layer → business logic/API → frontend UI. The architecture docs will specify this — follow their ordering. Look for parallel opportunities once the API is stable.
+Typical phasing: scaffolding → data model → auth/permissions → core business logic → API layer → frontend foundation → feature UI → integration/polish. Look for parallel opportunities between independent services and between independent frontend screens.
 
 ### Backend-only service:
-Typical phasing: data models/schemas → core logic → API/interface layer → integration. Independent services at the same layer should run in parallel per the architecture.
+Typical phasing: scaffolding → data model → auth → core services (parallel if independent) → API/interface layer → integration tests.
 
 ### CLI tool:
-Typical phasing: core library → command implementations → integration/E2E tests
+Typical phasing: scaffolding → core library/types → individual command implementations (parallel if independent) → integration/E2E tests.
 
 ### Mobile app:
-Typical phasing: shared types/API layer → screens/views → navigation/integration.
+Typical phasing: scaffolding → shared types/API layer → auth/session → individual screens/views (parallel if independent) → navigation/integration.
+
+### Adding a feature to an existing app:
+Typical phasing: data model changes → business logic → API endpoints → frontend UI → integration/edge cases. Fewer phases than greenfield, but still one layer per phase.
 
 ### Greenfield project:
-Start with project scaffolding (the lead can ask the user about this or have a teammate set it up), then follow the architecture's implementation plan.
+Always starts with a scaffolding phase (project structure, config, build tooling, dev environment). The lead can ask the user about this or have a teammate set it up. Then follow the architecture's implementation plan.
+
+## Integration Testing
+
+Phase-level tests (written by the test-author) verify individual components in isolation. Integration tests verify that components work together across the seams — that the API layer correctly calls the service layer, that the frontend correctly consumes the API, that auth middleware actually blocks unauthorized requests end-to-end.
+
+### When to spawn the integration-tester
+
+Don't spawn the integration-tester every phase — that would be wasteful. Spawn them at **natural integration boundaries** where multiple previously-independent components connect for the first time:
+
+- **After the API layer is complete** (if there's a frontend coming): The API consumes services, which consume the data layer. This is the first point where 3+ phases of work come together. Integration tests here verify the full backend stack end-to-end.
+- **After the frontend connects to the API**: The first time real user workflows can be tested from UI through to database.
+- **At the final phase**: Full end-to-end workflow tests covering the complete user journey.
+
+For smaller projects (3-4 phases), a single integration testing pass at the end is usually sufficient. For larger projects (6+ phases), aim for 2 integration checkpoints — one mid-build at a natural seam, one at the end.
+
+### What to tell the integration-tester
+
+- Which architecture docs to read — especially component design and API design (how components are supposed to interact)
+- Which requirement docs to read — especially user stories and workflows (the end-to-end journeys)
+- Which implementation files to read — unlike the test-author, the integration-tester needs to see what's built
+- Which existing test files to reference for patterns
+- What integration test files to create
+- What workflows to cover: happy paths through multi-component flows, error propagation across layers, auth enforcement end-to-end, data consistency across components
+
+### Handling integration test failures
+
+Integration test failures often reveal interface mismatches between components built in different phases. When this happens:
+1. Identify which component(s) need to change
+2. Re-spawn the relevant implementer with the failing test and context about the mismatch
+3. After the fix, re-run ALL tests (integration + unit) to ensure the fix doesn't regress anything
+4. Maximum 3 fix cycles, same as phase-level MUST-FIX handling
+
+## Documentation Pass
+
+Good code without documentation is a maintenance burden. The docs teammate handles this near the end of the build so the documentation reflects what was actually built, not what was planned.
+
+### When to spawn the docs teammate
+
+- **For projects with 5+ phases**: Spawn the docs teammate in parallel with the last implementation phase or the final integration testing pass. They can start documenting the already-completed phases while the last phase finishes.
+- **For smaller projects (3-4 phases)**: Spawn after the final review, before Final Verification.
+- **Skip entirely** for very small features where the code is self-documenting and no public API is involved.
+
+### What to tell the docs teammate
+
+- Which architecture docs to read — for understanding the intended design
+- Which requirement docs to read — for understanding the feature from the user's perspective
+- All implementation files — they need to see what was built
+- What to produce:
+  - **README updates**: If a README exists, update it with the new feature. If this is a new project, create one covering setup, usage, and development.
+  - **API documentation**: For any new endpoints — request/response shapes, auth requirements, error codes. Follow the project's existing API doc pattern if one exists.
+  - **Developer guide**: For complex components — how the architecture works, how to extend it, key design decisions. Not needed for straightforward CRUD.
+  - **Inline documentation review**: Check that complex functions, non-obvious logic, and public interfaces have adequate comments/docstrings. Flag gaps but don't rewrite implementation code — just add documentation.
+- What NOT to do: The docs teammate never modifies implementation code. They write documentation files and add comments/docstrings only.
+
+### Reviewing docs output
+
+Have the reviewer check the docs teammate's output — a quick pass to verify accuracy against the implementation. Documentation that contradicts the code is worse than no documentation.
 
 ## Final Verification
 
-After all phases complete:
-1. Run the full test suite
+After all phases, integration testing, and documentation are complete:
+1. Run the full test suite (all unit tests + integration tests)
 2. Run type checking
 3. Attempt a full build
-4. Update the progress file status to COMPLETE
-5. **Clean up the team from the lead session** — always shut down any remaining teammates from the lead. Teammates should not run cleanup because their team context may not resolve correctly.
-6. Report results to the user with a summary of what was built, any open SHOULD-FIX items, and any issues that hit the 3-cycle limit
+4. Verify documentation is consistent with the final implementation
+5. Update the progress file status to COMPLETE
+6. **Clean up the team from the lead session** — always shut down any remaining teammates from the lead. Teammates should not run cleanup because their team context may not resolve correctly.
+7. Report results to the user with a summary of what was built, any open SHOULD-FIX items, any issues that hit the 3-cycle limit, and a pointer to the documentation
