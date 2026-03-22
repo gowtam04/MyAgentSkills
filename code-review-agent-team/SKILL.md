@@ -13,6 +13,18 @@ The skill supports two entry points:
 
 **Requires Agent Teams.** This skill uses Claude Code Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`). If the feature is not enabled, tell the user they need to enable it by adding `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` to the `env` section of their `settings.json`, then restart Claude Code.
 
+## CRITICAL: Use Agent Teams, NOT Subagents
+
+This skill uses Claude Code's **Agent Teams** feature — NOT regular subagents (the Task tool). You MUST use the Agent Teams tooling: the team creation tool, teammate spawning tool, shared task list with dependency tracking, and the mailbox messaging system for peer-to-peer communication between teammates.
+
+Do NOT use the Task tool to dispatch work. Subagents are fire-and-forget workers that can only report back to a single parent. Agent Teams enable real coordination — teammates share findings, claim tasks from the shared list, and message each other directly.
+
+**Every worker in this skill — the reviewer, the foundational fixer, and all domain fixers — must be spawned as agent team teammates, never as subagents.**
+
+## CRITICAL: Reviewer Must Use the Code-Review Skill
+
+Whenever the reviewer teammate runs a review (in Step 0, Stage 2, Stage 4, Stage 5, or Step 5), it must invoke Claude Code's `/review` command — the same code-review skill that produces the original findings. The reviewer does NOT do a manual read-through and give its own opinion. It runs `/review` and reports what `/review` found. This is what makes the verification independent and repeatable.
+
 ## Detecting the Entry Point
 
 Check whether `/review` output already exists in the conversation. If there's a numbered issue list with GitHub permalink URLs in the chat above, the user already has findings — go to **Step 1: Parse and Normalize**.
@@ -81,7 +93,7 @@ Before spawning any teammates, the lead must ask the user about the scope of the
 
 Do not assume the scope. Wait for the user's answer before proceeding.
 
-Once the user specifies the scope, spawn the reviewer teammate with instructions to run `/review` with that scope. The reviewer runs the review and reports findings. After the reviewer completes, **shut it down** — it will be re-spawned later for verification.
+Once the user specifies the scope, create the agent team and spawn the reviewer as a **teammate** (not a subagent) with instructions to run `/review` with that scope. The reviewer must invoke the `/review` command — not do a manual code read. After the reviewer completes, **shut it down** — it will be re-spawned later for verification.
 
 The lead then takes the review output and proceeds to Step 1.
 
@@ -161,7 +173,7 @@ Separate these from the domain-specific issues. They'll be fixed first in Stage 
 - **Lead (you)**: Coordinates the team. Spawns and shuts down teammates. Presents findings and plans to the user. Does NOT write code or apply fixes — only coordinates.
 - **Foundational fixer**: Fixes blocking/foundational issues sequentially in Stage 1. Runs smoke checks (type checking, tests) but does NOT run `/review`. If there are no foundational issues, skip this role.
 - **Domain fixers** (1 per domain): Each owns all non-foundational issues in their domain. Applies fixes and runs smoke checks, but does NOT run `/review`. If all issues are in one domain, there's one domain fixer.
-- **Reviewer**: A separate dedicated teammate that uses Claude Code's `/review` to verify fixes. This teammate does NOT fix code — it only runs `/review`, inspects cross-layer contracts, and reports findings. The reviewer provides truly independent verification because it uses the same tool that found the original issues.
+- **Reviewer**: A separate teammate (NOT a subagent) that uses Claude Code's `/review` command to verify fixes. Every time the reviewer checks fixes, it must invoke `/review` — not do a manual read-through. This teammate does NOT fix code — it only runs `/review`, inspects cross-layer contracts, and reports findings.
 
 ### Concurrency rules
 - No more than 3 active teammates at a time
@@ -189,10 +201,10 @@ The foundational fixer works through these issues sequentially. After all founda
 
 Skip this stage if Stage 1 was skipped.
 
-Spawn the reviewer to verify foundational fixes before domain fixers start. Domain fixers' work depends on these fixes being correct — if a schema change is wrong, everything built on top of it will be wrong too.
+Spawn the reviewer as a **teammate** to verify foundational fixes before domain fixers start. Domain fixers' work depends on these fixes being correct — if a schema change is wrong, everything built on top of it will be wrong too.
 
 **Spawn prompt for the reviewer must include:**
-- Instruction to run `/review` across all files modified in Stage 1
+- Instruction to invoke the `/review` command across all files modified in Stage 1 (not a manual read — the actual `/review` command)
 - The original review findings for the foundational issues
 - The foundational fixer's results file
 
@@ -201,8 +213,8 @@ Spawn the reviewer to verify foundational fixes before domain fixers start. Doma
 2. Did any fix introduce new issues?
 
 **If the reviewer finds problems:**
-1. Re-spawn the foundational fixer with the reviewer's exact findings
-2. After the fixer revises, shut them down and re-spawn the reviewer to re-check
+1. Re-spawn the foundational fixer as a **teammate** with the reviewer's exact findings
+2. After the fixer revises, shut them down and re-spawn the reviewer as a **teammate** to re-check
 3. Maximum 3 fix-review cycles. After 3 rounds, mark remaining issues UNRESOLVED.
 
 Only proceed to Stage 3 when all foundational issues are CONFIRMED FIXED or marked UNRESOLVED.
@@ -223,10 +235,10 @@ After all domain fixers complete, **shut them all down**.
 
 ### Stage 4: Review All Fixes
 
-Spawn the reviewer to do the comprehensive verification pass.
+Spawn the reviewer as a **teammate** to do the comprehensive verification pass.
 
 **Spawn prompt for the reviewer must include:**
-- Instruction to run `/review` across ALL files modified during Stages 1–3
+- Instruction to invoke the `/review` command across ALL files modified during Stages 1–3 (not a manual read — the actual `/review` command)
 - The original review findings (all issues, with IDs and descriptions)
 - The results files from the foundational fixer and each domain fixer
 - The list of all modified files
@@ -251,9 +263,9 @@ The reviewer writes all findings to `fix-results/cross-domain-review.md`.
 ### Stage 5: Fix What the Reviewer Caught
 
 If the reviewer found problems:
-1. The lead re-spawns the appropriate fixer(s) with the reviewer's exact finding
+1. The lead re-spawns the appropriate fixer(s) as **teammates** with the reviewer's exact finding
 2. After the fixer revises, shut them down
-3. Re-spawn the reviewer to run `/review` on the re-modified files and re-check the specific issues that had problems
+3. Re-spawn the reviewer as a **teammate** to invoke `/review` on the re-modified files and re-check the specific issues that had problems
 4. **Maximum 3 review-fix cycles.** After 3 rounds, mark remaining issues UNRESOLVED.
 
 ### Shutting Down the Team
@@ -265,15 +277,15 @@ After all issues reach CONFIRMED FIXED or UNRESOLVED:
 
 ## Step 5: Final Full /review
 
-Run `/review` one last time across ALL files modified during the session. This catches interaction effects between fixes that per-issue verification might miss — things like fix A changing a return type that fix B's code depends on.
+Spawn the reviewer one last time as a **teammate** to invoke `/review` across ALL files modified during the session. This catches interaction effects between fixes that per-issue verification might miss — things like fix A changing a return type that fix B's code depends on.
 
-1. **Run `/review`** across all modified files
-2. **Run the full test suite** — all tests, not just the ones touched by fixes
-3. **Run type checking / linting** for every language in the affected files
+1. **Reviewer invokes `/review`** across all modified files
+2. **Lead runs the full test suite** — all tests, not just the ones touched by fixes
+3. **Lead runs type checking / linting** for every language in the affected files
 
-**Evaluate the output:**
-- **No original issues reappear, no new issues**: all fixes are confirmed. Proceed to Step 6.
-- **An original issue reappears**: that fix regressed or was invalidated by another fix. Re-spawn the appropriate fixer, then the reviewer, to fix and verify (max 3 cycles).
+**Evaluate the reviewer's output:**
+- **No original issues reappear, no new issues**: all fixes are confirmed. Shut down the reviewer, proceed to Step 6.
+- **An original issue reappears**: that fix regressed or was invalidated by another fix. Re-spawn the appropriate fixer as a **teammate**, then re-spawn the reviewer to verify (max 3 cycles).
 - **New issues in modified code**: a fix introduced a regression. If blocking, fix it. If minor, note it in the summary.
 - **New issues in unmodified code**: `/review` found something the original review missed. Note it in the summary but don't fix it unless the user asks.
 
