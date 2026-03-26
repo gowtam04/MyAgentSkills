@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"text": "Uses the app/product flow, not the company brand kit flow", "passed": true, "evidence": "Transcript: '1a. Determine brand kit type — This is clearly an App/Product branding request.' Phase 2a used, not Phase 2b."},
+    {"text": "Generates a logo using generate_asset.py with --prompt flag", "passed": true, "evidence": "Logo Generation: 'Tool: generate_asset.py', prompt about flowing checkmark in sky blue"},
+    {"text": "Logo prompt includes 'flat' or 'minimal' style and 'blue' colors and 'checkmark'", "passed": true, "evidence": "Prompt: 'A flat, minimal vector logo of a flowing checkmark in sky blue and white'"},
+    {"text": "Generates logo at 1024x1024 with --sizes 512 for the app icon", "passed": true, "evidence": "Settings: 1024x1024, PNG, transparent background, with --sizes 512. Renamed to icon-512.png."},
+    {"text": "Generates favicon with --sizes flag including 16,32 and --ico flag", "passed": true, "evidence": "Settings: '--sizes 16,32,180,192,512 and --ico'. Generated all variants plus favicon.ico."},
+    {"text": "Does NOT write brand-guidelines.md or color-palette.md or typography-guide.md", "passed": true, "evidence": "No Write calls for .md documents in transcript. Only logo and favicon generated."},
+    {"text": "Does NOT generate monochrome or reversed logo variations", "passed": true, "evidence": "Only 2 API calls: logo and favicon. No /modify calls for monochrome or reversed variants."},
+    {"text": "Outputs go to flat ./brandkit/ directory, not subdirectories like ./brandkit/logos/", "passed": true, "evidence": "All files at ./brandkit/ level: logo.png, icon-512.png, favicon.png etc. No logos/ or docs/ subdirectories."}
+  ],
+  "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0}
+}

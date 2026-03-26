@@ -1,0 +1,62 @@
+{
+  "tool_calls": {
+    "Read": 4,
+    "Bash": 13,
+    "Glob": 1,
+    "Write": 2,
+    "Edit": 0,
+    "AskUserQuestion": 0,
+    "total": 20
+  },
+  "api_calls": {
+    "generate": 2,
+    "modify": 0,
+    "total": 2
+  },
+  "assets_generated": {
+    "logo": {
+      "file": "logo.png",
+      "dimensions": "1024x1024",
+      "size_bytes": 670950,
+      "format": "png",
+      "background": "transparent"
+    },
+    "icon": {
+      "file": "icon-512.png",
+      "dimensions": "512x512",
+      "size_bytes": 231605,
+      "format": "png",
+      "derived_from": "logo.png"
+    },
+    "favicon": {
+      "file": "favicon.png",
+      "dimensions": "512x512",
+      "size_bytes": 221816,
+      "format": "png",
+      "background": "transparent",
+      "variants": [
+        {"file": "favicon-16x16.png", "dimensions": "16x16", "size_bytes": 513},
+        {"file": "favicon-32x32.png", "dimensions": "32x32", "size_bytes": 1420},
+        {"file": "favicon-180x180.png", "dimensions": "180x180", "size_bytes": 40157},
+        {"file": "favicon-192x192.png", "dimensions": "192x192", "size_bytes": 45763},
+        {"file": "favicon-512x512.png", "dimensions": "512x512", "size_bytes": 222079},
+        {"file": "favicon.ico", "dimensions": "16x16+32x32", "size_bytes": 1971}
+      ]
+    }
+  },
+  "total_files_generated": 9,
+  "generation_jobs": [
+    {
+      "job_id": "80d89f26-c0d7-4254-8472-d41d14ad7515",
+      "type": "generate",
+      "asset": "logo",
+      "status": "completed"
+    },
+    {
+      "job_id": "6a9fc04d-200f-4791-a14d-5ae493d6d4fc",
+      "type": "generate",
+      "asset": "favicon",
+      "status": "completed"
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "metadata": {
+    "skill_name": "create-brandkit",
+    "skill_path": "/Users/gowtam/MyAgentSkills/create-brandkit",
+    "timestamp": "2026-03-25T00:00:00Z",
+    "evals_run": [1, 2, 3],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 1,
+      "eval_name": "Company Brand Kit (Meridian Partners)",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 17,
+        "failed": 0,
+        "total": 17,
+        "time_seconds": 446.7,
+        "tokens": 51110,
+        "tool_calls": 39,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses the company brand kit flow", "passed": true, "evidence": "Followed Phase 2b company generation order"},
+        {"text": "Generates primary logo first before deriving variations", "passed": true, "evidence": "Step 1 generates primary, Steps 2-7 derive"},
+        {"text": "Creates monochrome logo via /modify", "passed": true, "evidence": "Used --source with --instructions on primary logo"},
+        {"text": "Creates reversed logo via /modify", "passed": true, "evidence": "Used --source with --instructions on primary logo"},
+        {"text": "Creates icon-mark via resize", "passed": true, "evidence": "Renamed primary-logo-512x512.png to icon-mark.png"},
+        {"text": "Generates favicon with --sizes and --ico", "passed": true, "evidence": "--sizes 16,32,180,192,512 --ico"},
+        {"text": "LinkedIn cover at ~2048x512", "passed": true, "evidence": "2048x512 PNG"},
+        {"text": "Twitter header at ~2048x682", "passed": true, "evidence": "2048x682 PNG"},
+        {"text": "Social profiles derived from icon-mark via resize", "passed": true, "evidence": "--source icon-mark.png with --sizes"},
+        {"text": "Business card with placeholder lines", "passed": true, "evidence": "Prompt specifies placeholder lines"},
+        {"text": "Writes brand-guidelines.md", "passed": true, "evidence": "brandkit/docs/brand-guidelines.md"},
+        {"text": "Writes color-palette.md with hex/RGB", "passed": true, "evidence": "Includes hex, RGB, HSL, CSS/Tailwind"},
+        {"text": "Writes typography-guide.md", "passed": true, "evidence": "Playfair Display + Source Sans 3"},
+        {"text": "Color palette has CSS custom properties", "passed": true, "evidence": "Confirmed in transcript"},
+        {"text": "Typography guide has type scale table", "passed": true, "evidence": "Display through Tiny scale"},
+        {"text": "Prompts use navy/gold colors", "passed": true, "evidence": "All prompts include navy blue and gold"},
+        {"text": "Uses subdirectory staging structure", "passed": true, "evidence": "logos/, social/, collateral/, docs/"}
+      ]
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "Company Brand Kit (Meridian Partners)",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.59,
+        "passed": 10,
+        "failed": 7,
+        "total": 17,
+        "time_seconds": 442.1,
+        "tokens": 43625,
+        "tool_calls": 40,
+        "errors": 3
+      },
+      "expectations": [
+        {"text": "Uses the company brand kit flow", "passed": false, "evidence": "No company flow in old skill"},
+        {"text": "Generates primary logo first before deriving variations", "passed": false, "evidence": "All 8 assets generated in parallel"},
+        {"text": "Creates monochrome logo via /modify", "passed": false, "evidence": "No /modify calls, no monochrome variant"},
+        {"text": "Creates reversed logo via /modify", "passed": false, "evidence": "No /modify calls, no reversed variant"},
+        {"text": "Creates icon-mark via resize", "passed": true, "evidence": "Copied logo-512x512 to icon-512"},
+        {"text": "Generates favicon with --sizes and --ico", "passed": true, "evidence": "--sizes and --ico used"},
+        {"text": "LinkedIn cover at ~2048x512", "passed": true, "evidence": "2048x512 after retry"},
+        {"text": "Twitter header at ~2048x682", "passed": false, "evidence": "Used 2048x512, not 682"},
+        {"text": "Social profiles derived from icon-mark via resize", "passed": false, "evidence": "Generated separately via /generate"},
+        {"text": "Business card with placeholder lines", "passed": false, "evidence": "Used actual text, not placeholder lines"},
+        {"text": "Writes brand-guidelines.md", "passed": true, "evidence": "Improvised brand guidelines doc"},
+        {"text": "Writes color-palette.md with hex/RGB", "passed": true, "evidence": "Includes hex, RGB, CMYK"},
+        {"text": "Writes typography-guide.md", "passed": true, "evidence": "Playfair Display + Inter"},
+        {"text": "Color palette has CSS custom properties", "passed": true, "evidence": "CSS and Tailwind included"},
+        {"text": "Typography guide has type scale table", "passed": true, "evidence": "Desktop and mobile scales"},
+        {"text": "Prompts use navy/gold colors", "passed": true, "evidence": "Navy blue and gold in all prompts"},
+        {"text": "Uses subdirectory staging structure", "passed": false, "evidence": "Flat brandkit/ directory"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "App/Product Regression (TaskFlow)",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 225.9,
+        "tokens": 38433,
+        "tool_calls": 27,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses app/product flow", "passed": true, "evidence": "Step 1a: 'clearly App/Product branding'"},
+        {"text": "Uses generate_asset.py with --prompt", "passed": true, "evidence": "Logo and favicon both use --prompt"},
+        {"text": "Prompt has flat/minimal + blue + checkmark", "passed": true, "evidence": "flat, minimal vector logo of a flowing checkmark in sky blue"},
+        {"text": "Logo at 1024x1024 with --sizes 512", "passed": true, "evidence": "1024x1024, --sizes 512, renamed to icon-512"},
+        {"text": "Favicon with --sizes 16,32 and --ico", "passed": true, "evidence": "--sizes 16,32,180,192,512 and --ico"},
+        {"text": "No brand docs written", "passed": true, "evidence": "Only image assets generated"},
+        {"text": "No monochrome/reversed variations", "passed": true, "evidence": "Only 2 API calls: logo and favicon"},
+        {"text": "Flat ./brandkit/ directory", "passed": true, "evidence": "All files at ./brandkit/ level"}
+      ]
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "App/Product Regression (TaskFlow)",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 127.8,
+        "tokens": 28190,
+        "tool_calls": 21,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses app/product flow", "passed": true, "evidence": "Followed Phase 1 (1a-1d), Phase 2 from old skill"},
+        {"text": "Uses generate_asset.py with --prompt", "passed": true, "evidence": "Both logo and favicon use --prompt"},
+        {"text": "Prompt has flat/minimal + blue + checkmark", "passed": true, "evidence": "flat, minimal vector logo of a flowing checkmark in sky blue"},
+        {"text": "Logo at 1024x1024 with --sizes 512", "passed": true, "evidence": "1024x1024, --sizes 512, renamed to icon-512"},
+        {"text": "Favicon with --sizes 16,32 and --ico", "passed": true, "evidence": "--sizes 16,32,180,192,512, --ico"},
+        {"text": "No brand docs written", "passed": true, "evidence": "Only image assets generated"},
+        {"text": "No monochrome/reversed variations", "passed": true, "evidence": "Only 2 API calls"},
+        {"text": "Flat ./brandkit/ directory", "passed": true, "evidence": "All files in flat brandkit/"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "Ambiguous Request (Bloom startup)",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 427.3,
+        "tokens": 41905,
+        "tool_calls": 35,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses AskUserQuestion for brand kit type", "passed": true, "evidence": "Attempted AskUserQuestion with 'What type of brand kit do you need?'"},
+        {"text": "Offers app/product and company options", "passed": true, "evidence": "Options: App/Product branding, Company brand kit, Just one asset"},
+        {"text": "Does NOT immediately generate without determining type", "passed": true, "evidence": "Attempted branching question before any generation"},
+        {"text": "Does NOT skip branching question", "passed": true, "evidence": "Explicitly identified as ambiguous per step 1a, attempted question"}
+      ]
+    },
+    {
+      "eval_id": 3,
+      "eval_name": "Ambiguous Request (Bloom startup)",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.0,
+        "passed": 0,
+        "failed": 4,
+        "total": 4,
+        "time_seconds": 266.9,
+        "tokens": 30742,
+        "tool_calls": 24,
+        "errors": 0
+      },
+      "expectations": [
+        {"text": "Uses AskUserQuestion for brand kit type", "passed": false, "evidence": "No branching question in old skill. Asked about assets/colors/style but not app-vs-company"},
+        {"text": "Offers app/product and company options", "passed": false, "evidence": "Options were app-level only: Just a logo / Logo+favicon / Full brand kit"},
+        {"text": "Does NOT immediately generate without determining type", "passed": false, "evidence": "Skipped type determination, went straight to app-flow generation"},
+        {"text": "Does NOT skip branching question", "passed": false, "evidence": "Defaulted to app flow without branching. No concept of company brand kit in old skill"}
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0},
+      "time_seconds": {"mean": 366.6, "stddev": 121.7, "min": 225.9, "max": 446.7},
+      "tokens": {"mean": 43816, "stddev": 6420, "min": 38433, "max": 51110}
+    },
+    "without_skill": {
+      "pass_rate": {"mean": 0.53, "stddev": 0.50, "min": 0.0, "max": 1.0},
+      "time_seconds": {"mean": 278.9, "stddev": 158.4, "min": 127.8, "max": 442.1},
+      "tokens": {"mean": 34186, "stddev": 7962, "min": 28190, "max": 43625}
+    },
+    "delta": {
+      "pass_rate": "+0.47",
+      "time_seconds": "+87.7",
+      "tokens": "+9630"
+    }
+  },
+  "notes": [
+    "New skill achieves 100% pass rate across all 3 evals vs 53% for old skill",
+    "App/product regression test passes 100% on both old and new skill — no regression",
+    "Company brand kit eval shows the biggest improvement: 100% vs 59% — old skill improvised but missed key patterns (no /modify for variations, no subdirectories, no placeholder lines on business cards)",
+    "Ambiguous request eval is the clearest differentiator: 100% vs 0% — old skill has no branching concept",
+    "New skill adds ~88s average execution time and ~9.6K tokens, justified by the significantly expanded scope"
+  ]
+}

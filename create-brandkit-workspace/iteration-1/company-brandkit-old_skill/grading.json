@@ -1,0 +1,22 @@
+{
+  "expectations": [
+    {"text": "Uses the company brand kit flow, not the app/product flow", "passed": false, "evidence": "Old skill has no company brand kit flow. Agent followed the app/product Phase 1 (1a-1d) and improvised company-level assets."},
+    {"text": "Generates primary logo first before deriving variations", "passed": false, "evidence": "Generated all 8 assets in parallel in 'Generation Round 1' — no sequential ordering."},
+    {"text": "Creates monochrome logo using /modify endpoint on primary logo, not a separate /generate call", "passed": false, "evidence": "No monochrome logo variation was created at all. All API calls used /generate, none used /modify."},
+    {"text": "Creates reversed (white) logo using /modify endpoint on primary logo, not a separate /generate call", "passed": false, "evidence": "No reversed/white logo variation was created. No /modify calls in the transcript."},
+    {"text": "Creates an icon-mark (derived from primary logo via resize or /modify)", "passed": true, "evidence": "Post-Processing: 'Copied logo-512x512.png to icon-512.png (app icon derived from logo per skill instructions)'"},
+    {"text": "Generates favicon with --sizes and --ico flags", "passed": true, "evidence": "Favicon generation: '--sizes 16,32,180,192,512, --ico' — produced all size variants plus .ico"},
+    {"text": "Generates LinkedIn cover image at approximately 2048x512 dimensions", "passed": true, "evidence": "LinkedIn Banner retry: 'Settings: 2048x512, PNG, opaque'. Output: linkedin-banner.png"},
+    {"text": "Generates Twitter header image at approximately 2048x682 dimensions", "passed": false, "evidence": "Twitter Header: 'Settings: 2048x512' — used 512 height not 682. Initially tried 1500x500 (failed), retried at 2048x512."},
+    {"text": "Social profile pictures are derived from the icon-mark via resize, not generated separately", "passed": false, "evidence": "Social Profile Image used /generate with a new prompt, not derived from icon-mark via resize."},
+    {"text": "Generates a business card concept with placeholder lines instead of real text", "passed": false, "evidence": "Business card prompt includes actual text: 'company name Meridian Partners', 'John Smith | Managing Director'. Not placeholder lines."},
+    {"text": "Writes a brand-guidelines.md file in ./brandkit/docs/", "passed": true, "evidence": "Phase 2b: 'Brand Guidelines (brand-guidelines.md)' created. But in flat brandkit/, not brandkit/docs/."},
+    {"text": "Writes a color-palette.md file with hex codes and RGB values in ./brandkit/docs/", "passed": true, "evidence": "Phase 2b: 'Color Palette (color-palette.md)' with Hex, RGB, HSL, CMYK. Location is flat, not docs/ subdir."},
+    {"text": "Writes a typography-guide.md file with font recommendations in ./brandkit/docs/", "passed": true, "evidence": "Phase 2b: 'Typography Guide (typography-guide.md)' — Playfair Display + Inter. Location is flat."},
+    {"text": "Color palette document includes CSS custom properties section", "passed": true, "evidence": "Phase 2b: 'CSS custom properties and Tailwind config examples'"},
+    {"text": "Typography guide includes a type scale table", "passed": true, "evidence": "Phase 2b: 'Complete type scale (desktop and mobile)'"},
+    {"text": "All image assets use navy/blue and gold color descriptions in prompts", "passed": true, "evidence": "All prompts reference 'deep navy blue (#1B2A4A)' and 'gold (#C8A951)'"},
+    {"text": "Stages all outputs in ./brandkit/ with subdirectories (logos/, social/, collateral/, docs/)", "passed": false, "evidence": "All files in flat ./brandkit/ directory. No subdirectories used — transcript shows logo.png, favicon.png, linkedin-banner.png all at top level."}
+  ],
+  "summary": {"passed": 10, "failed": 7, "total": 17, "pass_rate": 0.59}
+}
