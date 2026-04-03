@@ -5,13 +5,15 @@ description: Review and fix code using a coordinated agent team. Use this skill 
 
 # Code Review Agent Team
 
-This skill uses Claude Code Agent Teams to review code, fix issues, and independently verify every fix. Fixers fix, a separate reviewer verifies by running `/review` — these roles never overlap. Every fix goes through a fix → independent re-review → refix loop until the issue is definitively resolved.
+This skill uses Claude Code Agent Teams to review code, fix issues, and independently verify every fix. Fixers fix, two independent reviewers verify in parallel — one runs Claude Code's `/review` and the other runs `/codex:review` (or `/codex:adversarial-review` for high-stakes items) — reviewer and fixer roles never overlap. Every fix goes through a fix → independent dual re-review → refix loop until the issue is definitively resolved.
 
 The skill supports two entry points:
-- **Full loop**: the user asks to review and fix their code. The skill runs `/review` first, then fixes what it finds.
-- **Fix only**: the user already has review findings (from running `/review` themselves). The skill parses the existing findings and starts fixing.
+- **Full loop**: the user asks to review and fix their code. The skill runs both `/review` and `/codex:review` in parallel first, merges and deduplicates findings, then fixes what they find.
+- **Fix only**: the user already has review findings (from running `/review` or `/codex:review` themselves). The skill parses the existing findings and starts fixing.
 
 **Requires Agent Teams.** This skill uses Claude Code Agent Teams (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`). If the feature is not enabled, tell the user they need to enable it by adding `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` to the `env` section of their `settings.json`, then restart Claude Code.
+
+**Requires Codex plugin.** This skill also uses the Codex review plugin for the second reviewer. If `/codex:review` fails or the plugin is not installed, fall back to single-reviewer mode using only `/review` and warn the user. Suggest running `/codex:setup` to configure the Codex CLI.
 
 ## CRITICAL: Use Agent Teams, NOT Subagents
 
@@ -19,17 +21,35 @@ This skill uses Claude Code's **Agent Teams** feature — NOT regular subagents 
 
 Do NOT use the Task tool to dispatch work. Subagents are fire-and-forget workers that can only report back to a single parent. Agent Teams enable real coordination — teammates share findings, claim tasks from the shared list, and message each other directly.
 
-**Every worker in this skill — the reviewer, the foundational fixer, and all domain fixers — must be spawned as agent team teammates, never as subagents.**
+**Every worker in this skill — both reviewers (Claude Code Reviewer and Codex Reviewer), the foundational fixer, and all domain fixers — must be spawned as agent team teammates, never as subagents.**
 
-## CRITICAL: Reviewer Must Use the Code-Review Skill
+## CRITICAL: Reviewers Must Use Their Designated Review Commands
 
-Whenever the reviewer teammate runs a review (in Step 0, Stage 2, Stage 4, Stage 5, or Step 5), it must invoke Claude Code's `/review` command — the same code-review skill that produces the original findings. The reviewer does NOT do a manual read-through and give its own opinion. It runs `/review` and reports what `/review` found. This is what makes the verification independent and repeatable.
+This skill uses two independent reviewers. Neither reviewer does a manual read-through or gives its own opinion — each invokes its designated review command and reports what it found. This is what makes the verification independent and repeatable.
+
+- **Claude Code Reviewer**: Must invoke `/review` — the same code-review command that produces the original findings. Used in Step 0, Stage 2, Stage 4, Stage 5, and Step 5.
+- **Codex Reviewer**: Must invoke `/codex:review` for standard reviews, or `/codex:adversarial-review` for high-stakes items. Used at the same stages as the Claude Code Reviewer, always running in parallel with it.
+
+### When to use adversarial review
+
+The Codex Reviewer uses `/codex:adversarial-review` instead of `/codex:review` when any of the following apply to the items under review:
+- P0 severity issues (security, missing auth, data exposure, blocking regressions)
+- Security or authentication changes
+- Database schema changes or migrations
+- Architectural refactors (splitting functions, changing data flow, changing public APIs)
+- Any fix classified as high-risk in the Risk Classification section
+- Infrastructure scripts (CI/CD, Terraform, deployment configs)
+- The final gate review (Step 5) — always use adversarial mode here for maximum scrutiny
+
+For all other reviews, the Codex Reviewer uses `/codex:review`.
 
 ## Detecting the Entry Point
 
-Check whether `/review` output already exists in the conversation. If there's a numbered issue list with GitHub permalink URLs in the chat above, the user already has findings — go to **Step 1: Parse and Normalize**.
+Check whether review output already exists in the conversation — from either `/review` or `/codex:review`. If there's a numbered issue list with GitHub permalink URLs or Codex review findings in the chat above, the user already has findings.
 
-If no review findings exist in the conversation, the user wants the full loop — go to **Step 0: Initial Review**.
+- If findings from **both** reviewers exist, go to **Step 1: Parse and Normalize** with the merged findings.
+- If findings from **only one** reviewer exist, ask the user if they want to run the other reviewer for a more complete picture. If they decline, proceed with single-reviewer findings to **Step 1**. If they agree, spawn the missing reviewer, then merge and proceed.
+- If **no** review findings exist, the user wants the full loop — go to **Step 0: Initial Review**.
 
 ## Review Format
 
@@ -59,13 +79,25 @@ Code review
   - When in doubt, default to P1.
 - Multiple URLs may appear if the issue spans multiple files — capture all of them
 
+### Codex Review Output
+
+The Codex Reviewer's output (from `/codex:review` or `/codex:adversarial-review`) may use a different format than `/review`. The lead should parse Codex findings by:
+- Extracting file paths and line numbers from whatever format Codex produces
+- Mapping descriptions to the same normalized structure used for `/review` findings
+- If Codex does not produce GitHub permalink URLs, constructing file path + line range from the Codex output directly
+
+Codex findings are merged with `/review` findings using the deduplication procedure described in the Finding Merge section below.
+
 ## Workflow Overview
 
 ```
 Step 0: Initial Review (only if no findings exist)
-  Lead asks user about review scope → spawns reviewer → reviewer runs /review
+  Lead asks user about review scope → spawns both reviewers in parallel
+    → Claude Code Reviewer runs /review
+    → Codex Reviewer runs /codex:review
+  Lead merges and deduplicates findings
          │
-Step 1: Parse and Normalize
+Step 1: Parse and Normalize (merged findings from both reviewers)
          │
 Step 2: Present Findings and Plan Fixes (user approves before any fixing starts)
          │
@@ -73,14 +105,20 @@ Step 3: Assign Domains and Create Team
          │
 Step 4: Execute
   Stage 1: Foundational fixer applies blocking fixes
-  Stage 2: Reviewer verifies foundational fixes with /review
+  Stage 2: Both reviewers verify foundational fixes in parallel
+    → Claude Code Reviewer runs /review
+    → Codex Reviewer runs /codex:review (or /codex:adversarial-review for high-stakes)
   Stage 3: Domain fixers apply remaining fixes in parallel
-  Stage 4: Reviewer verifies all fixes with /review
-  Stage 5: Fix-review loop if reviewer caught problems
+  Stage 4: Both reviewers verify all fixes in parallel
+    → Claude Code Reviewer runs /review + cross-layer inspection
+    → Codex Reviewer runs /codex:review (or /codex:adversarial-review for high-stakes)
+  Stage 5: Fix-review loop if either reviewer caught problems
          │
-Step 5: Final Full /review
+Step 5: Final Full Dual Review
+    → Claude Code Reviewer runs /review
+    → Codex Reviewer runs /codex:adversarial-review (always adversarial at final gate)
          │
-Step 6: Summary Report
+Step 6: Summary Report (findings attributed by reviewer source)
 ```
 
 ## Step 0: Initial Review
@@ -93,13 +131,46 @@ Before spawning any teammates, the lead must ask the user about the scope of the
 
 Do not assume the scope. Wait for the user's answer before proceeding.
 
-Once the user specifies the scope, create the agent team and spawn the reviewer as a **teammate** (not a subagent) with instructions to run `/review` with that scope. The reviewer must invoke the `/review` command — not do a manual code read. After the reviewer completes, **shut it down** — it will be re-spawned later for verification.
+Once the user specifies the scope, create the agent team and spawn **two reviewers** as teammates (not subagents), running in parallel:
 
-The lead then takes the review output and proceeds to Step 1.
+1. **Claude Code Reviewer** — instructed to run `/review` with the specified scope
+2. **Codex Reviewer** — instructed to run `/codex:review` with the specified scope
+
+Both reviewers run concurrently. After both complete, **shut both down** — they will be re-spawned later for verification.
+
+The lead then takes the outputs from both reviewers, merges and deduplicates them (see Finding Merge below), and proceeds to Step 1.
+
+## Finding Merge and Deduplication
+
+Whenever the lead receives findings from both reviewers (in Step 0, Stage 2, Stage 4, Stage 5, or Step 5), it must merge and deduplicate them before proceeding.
+
+### Deduplication criteria
+
+Two findings are considered duplicates when **all three** conditions are met:
+1. **Same file**: both findings reference the same file path
+2. **Overlapping line range**: the line ranges overlap or are within 5 lines of each other
+3. **Similar description**: the issue descriptions address the same underlying problem (even if worded differently)
+
+### Merge procedure
+
+1. Start with the Claude Code Reviewer's findings as the primary list (since `/review` produces the structured numbered format the rest of the skill depends on).
+2. For each Codex Reviewer finding, check if it duplicates a Claude Code finding using the three criteria above.
+3. **If duplicate**: annotate the existing finding with "Also flagged by Codex Reviewer" and append any additional context the Codex finding provides that the Claude Code finding does not.
+4. **If unique** (not a duplicate): add it to the list as a new finding with the next sequential ID. Note "Source: Codex Reviewer" on the finding.
+5. The merged list becomes the canonical finding list used in all subsequent steps.
+
+### Source tracking
+
+Every finding in the normalized list carries a `source` field:
+- `claude-review` — found only by the Claude Code Reviewer
+- `codex-review` — found only by the Codex Reviewer
+- `both` — found by both reviewers independently
+
+This field is used in the Step 6 summary report to show reviewer agreement.
 
 ## Step 1: Parse and Normalize
 
-Read the review output (from Step 0 or from the conversation) and extract a normalized list of issues. Each issue needs:
+Read the merged review output (from Step 0 or from the conversation) and extract a normalized list of issues. Each issue needs:
 
 - **id**: sequential number from the review
 - **title**: short summary
@@ -109,6 +180,7 @@ Read the review output (from Step 0 or from the conversation) and extract a norm
 - **description**: the full explanation of what's wrong and why
 - **risk_level**: `low`, `medium`, or `high` — this is about the *fix*, not the *bug* (see Risk Classification below)
 - **domain**: which area of the codebase this file belongs to (see Step 3)
+- **source**: `claude-review`, `codex-review`, or `both` — which reviewer(s) flagged this issue
 
 ## Step 2: Present Findings and Plan Fixes
 
@@ -170,14 +242,17 @@ Separate these from the domain-specific issues. They'll be fixed first in Stage 
 
 ### Team composition
 
-- **Lead (you)**: Coordinates the team. Spawns and shuts down teammates. Presents findings and plans to the user. Does NOT write code or apply fixes — only coordinates.
-- **Foundational fixer**: Fixes blocking/foundational issues sequentially in Stage 1. Runs smoke checks (type checking, tests) but does NOT run `/review`. If there are no foundational issues, skip this role.
-- **Domain fixers** (1 per domain): Each owns all non-foundational issues in their domain. Applies fixes and runs smoke checks, but does NOT run `/review`. If all issues are in one domain, there's one domain fixer.
-- **Reviewer**: A separate teammate (NOT a subagent) that uses Claude Code's `/review` command to verify fixes. Every time the reviewer checks fixes, it must invoke `/review` — not do a manual read-through. This teammate does NOT fix code — it only runs `/review`, inspects cross-layer contracts, and reports findings.
+- **Lead (you)**: Coordinates the team. Spawns and shuts down teammates. Presents findings and plans to the user. Merges and deduplicates findings from both reviewers. Does NOT write code or apply fixes — only coordinates.
+- **Foundational fixer**: Fixes blocking/foundational issues sequentially in Stage 1. Runs smoke checks (type checking, tests) but does NOT run any review commands. If there are no foundational issues, skip this role.
+- **Domain fixers** (1 per domain): Each owns all non-foundational issues in their domain. Applies fixes and runs smoke checks, but does NOT run any review commands. If all issues are in one domain, there's one domain fixer.
+- **Claude Code Reviewer**: A separate teammate (NOT a subagent) that uses Claude Code's `/review` command to verify fixes. Every time it checks fixes, it must invoke `/review` — not do a manual read-through. This teammate does NOT fix code — it only runs `/review`, inspects cross-layer contracts, and reports findings.
+- **Codex Reviewer**: A separate teammate (NOT a subagent) that uses the Codex review plugin to verify fixes. For standard reviews it runs `/codex:review`. For high-stakes items (see "When to use adversarial review" above), it runs `/codex:adversarial-review`. This teammate does NOT fix code — it only runs Codex review commands and reports findings.
+
+Both reviewers are always spawned and shut down together. They run their reviews in parallel at every review stage.
 
 ### Concurrency rules
-- No more than 3 active teammates at a time
-- Two teammates must never edit the same file
+- No more than 4 active teammates at a time (review stages require 2 reviewer slots, leaving 2 slots for concurrent fixers during fix-review loops; during fix-only stages like Stage 1 and Stage 3, all 4 slots are available for fixers)
+- Two teammates must never edit the same file (this applies to fixers — reviewers are read-only and don't edit files)
 - Shut down a teammate as soon as their tasks are complete
 
 ### Model requirement
@@ -201,20 +276,25 @@ The foundational fixer works through these issues sequentially. After all founda
 
 Skip this stage if Stage 1 was skipped.
 
-Spawn the reviewer as a **teammate** to verify foundational fixes before domain fixers start. Domain fixers' work depends on these fixes being correct — if a schema change is wrong, everything built on top of it will be wrong too.
+Spawn **both reviewers** as teammates in parallel to verify foundational fixes before domain fixers start. Domain fixers' work depends on these fixes being correct — if a schema change is wrong, everything built on top of it will be wrong too.
 
-**Spawn prompt for the reviewer must include:**
-- Instruction to invoke the `/review` command across all files modified in Stage 1 (not a manual read — the actual `/review` command)
+**Spawn prompts for both reviewers must include:**
 - The original review findings for the foundational issues
 - The foundational fixer's results file
 
-**The reviewer runs `/review` and checks:**
-1. Does any foundational issue still appear in the output? If so, the fix didn't work.
+**Claude Code Reviewer:** instructed to invoke `/review` across all files modified in Stage 1.
+
+**Codex Reviewer:** instructed to invoke `/codex:review` across the same files. Use `/codex:adversarial-review` if any foundational fix involves schema changes, migrations, security model changes, or is classified as high-risk.
+
+**Both reviewers check:**
+1. Does any foundational issue still appear in their output? If so, the fix didn't work.
 2. Did any fix introduce new issues?
 
-**If the reviewer finds problems:**
-1. Re-spawn the foundational fixer as a **teammate** with the reviewer's exact findings
-2. After the fixer revises, shut them down and re-spawn the reviewer as a **teammate** to re-check
+The lead merges findings from both reviewers using the deduplication procedure.
+
+**If either reviewer finds problems:**
+1. Re-spawn the foundational fixer as a **teammate** with the merged findings from both reviewers
+2. After the fixer revises, shut them down and re-spawn **both reviewers** as teammates to re-check
 3. Maximum 3 fix-review cycles. After 3 rounds, mark remaining issues UNRESOLVED.
 
 Only proceed to Stage 3 when all foundational issues are CONFIRMED FIXED or marked UNRESOLVED.
@@ -235,17 +315,16 @@ After all domain fixers complete, **shut them all down**.
 
 ### Stage 4: Review All Fixes
 
-Spawn the reviewer as a **teammate** to do the comprehensive verification pass.
+Spawn **both reviewers** as teammates in parallel to do the comprehensive verification pass.
 
-**Spawn prompt for the reviewer must include:**
-- Instruction to invoke the `/review` command across ALL files modified during Stages 1–3 (not a manual read — the actual `/review` command)
+**Spawn prompts for both reviewers must include:**
 - The original review findings (all issues, with IDs and descriptions)
 - The results files from the foundational fixer and each domain fixer
 - The list of all modified files
 
-**The reviewer does two things:**
+**Claude Code Reviewer** does two things:
 
-**First: run `/review` across ALL modified files.** This is an independent re-review using the same tool that produced the original findings. The reviewer checks:
+**First: run `/review` across ALL modified files.** This is an independent re-review using the same tool that produced the original findings. It checks:
 1. Does any original issue still appear? If so, the fixer's fix didn't work.
 2. Did any fix introduce new issues?
 
@@ -253,55 +332,63 @@ Spawn the reviewer as a **teammate** to do the comprehensive verification pass.
 1. Read the fix in every modified file for that issue
 2. Trace data flow across boundaries: does the caller send what the callee expects? Do types, column names, and serialization formats all agree?
 
-The reviewer writes all findings to `fix-results/cross-domain-review.md`.
+The Claude Code Reviewer writes findings to `fix-results/cross-domain-review-claude.md`.
 
-**Reviewer verdict per issue:**
-- **CONFIRMED FIXED**: `/review` doesn't flag it and cross-layer contracts are consistent.
+**Codex Reviewer** runs `/codex:review` across ALL modified files. For any issue that is P0 severity, involves security/auth, schema/migration, or architectural refactors, it runs `/codex:adversarial-review` specifically targeting those files. The Codex Reviewer writes findings to `fix-results/cross-domain-review-codex.md`.
+
+The lead merges findings from both reviewers into `fix-results/cross-domain-review.md` using the deduplication procedure.
+
+**Reviewer verdict per issue** — an issue is only CONFIRMED FIXED when **neither** reviewer flags it:
+- **CONFIRMED FIXED**: neither `/review` nor `/codex:review` flags it and cross-layer contracts are consistent.
 - **CROSS-LAYER MISMATCH**: fix is correct within its domain but mismatches another layer. Describe what doesn't align.
-- **NOT FIXED**: `/review` still flags it. Describe why.
+- **NOT FIXED**: one or both reviewers still flag it. Note which reviewer(s) and describe why.
 
-### Stage 5: Fix What the Reviewer Caught
+### Stage 5: Fix What Either Reviewer Caught
 
-If the reviewer found problems:
-1. The lead re-spawns the appropriate fixer(s) as **teammates** with the reviewer's exact finding
+If either reviewer found problems:
+1. The lead merges and deduplicates findings from both reviewers, then re-spawns the appropriate fixer(s) as **teammates** with the merged findings
 2. After the fixer revises, shut them down
-3. Re-spawn the reviewer as a **teammate** to invoke `/review` on the re-modified files and re-check the specific issues that had problems
+3. Re-spawn **both reviewers** as teammates in parallel to re-check the specific issues that had problems — each reviewer should verify that the concerns it originally raised are now addressed
 4. **Maximum 3 review-fix cycles.** After 3 rounds, mark remaining issues UNRESOLVED.
 
 ### Shutting Down the Team
 
 After all issues reach CONFIRMED FIXED or UNRESOLVED:
-1. Shut down all remaining teammates from the lead session
+1. Shut down all remaining teammates (both reviewers, all fixers) from the lead session
 2. The lead runs a final full test suite
 3. Proceed to Step 5
 
-## Step 5: Final Full /review
+## Step 5: Final Full Dual Review
 
-Spawn the reviewer one last time as a **teammate** to invoke `/review` across ALL files modified during the session. This catches interaction effects between fixes that per-issue verification might miss — things like fix A changing a return type that fix B's code depends on.
+Spawn **both reviewers** one last time as teammates in parallel across ALL files modified during the session. This catches interaction effects between fixes that per-issue verification might miss — things like fix A changing a return type that fix B's code depends on.
 
-1. **Reviewer invokes `/review`** across all modified files
-2. **Lead runs the full test suite** — all tests, not just the ones touched by fixes
-3. **Lead runs type checking / linting** for every language in the affected files
+1. **Claude Code Reviewer invokes `/review`** across all modified files
+2. **Codex Reviewer invokes `/codex:adversarial-review`** across all modified files — always use adversarial mode at this final gate for maximum scrutiny, regardless of whether the items are individually high-stakes
+3. **Lead runs the full test suite** — all tests, not just the ones touched by fixes
+4. **Lead runs type checking / linting** for every language in the affected files
 
-**Evaluate the reviewer's output:**
-- **No original issues reappear, no new issues**: all fixes are confirmed. Shut down the reviewer, proceed to Step 6.
-- **An original issue reappears**: that fix regressed or was invalidated by another fix. Re-spawn the appropriate fixer as a **teammate**, then re-spawn the reviewer to verify (max 3 cycles).
-- **New issues in modified code**: a fix introduced a regression. If blocking, fix it. If minor, note it in the summary.
-- **New issues in unmodified code**: `/review` found something the original review missed. Note it in the summary but don't fix it unless the user asks.
+The lead merges findings from both reviewers using the deduplication procedure.
 
-This is the last gate. Nothing gets reported as FIXED unless it survived this final `/review`.
+**Evaluate the merged output from both reviewers:**
+- **No original issues reappear in either reviewer's output, no new issues**: all fixes are confirmed. Shut down both reviewers, proceed to Step 6.
+- **An original issue reappears in either reviewer's output**: that fix regressed or was invalidated by another fix. Re-spawn the appropriate fixer as a **teammate**, then re-spawn **both reviewers** to verify (max 3 cycles).
+- **New issues in modified code**: a fix introduced a regression. If blocking, fix it. If minor, note it in the summary. Attribute the finding to the reviewer that caught it.
+- **New issues in unmodified code**: a reviewer found something the original review missed. Note it in the summary but don't fix it unless the user asks.
+
+This is the last gate. Nothing gets reported as FIXED unless it survived this final dual review from **both** reviewers.
 
 ## Step 6: Summary Report
 
 Present a summary covering:
 
-- **Issue tally**: X found, Y confirmed fixed (verified by `/review`), Z unresolved (with reasons)
-- **Per-issue summary**: what was changed, where, and confirmation that `/review` no longer flags it
-- **Fix cycles**: for issues that needed multiple attempts, what `/review` flagged each cycle and what ultimately resolved it
-- **Unresolved issues**: what was tried, what `/review` is still flagging, and what the user should do next
-- **New issues discovered**: anything noticed during fixing that wasn't in the original review
+- **Issue tally**: X found (Y by `/review`, Z by `/codex:review`, W by both), N confirmed fixed (verified by both reviewers), M unresolved (with reasons)
+- **Per-issue summary**: what was changed, where, which reviewer(s) originally flagged it (`source` field), and confirmation that neither reviewer flags it now
+- **Fix cycles**: for issues that needed multiple attempts, what each reviewer flagged per cycle and what ultimately resolved it
+- **Unresolved issues**: what was tried, what each reviewer is still flagging, and what the user should do next
+- **New issues discovered**: anything noticed during fixing that wasn't in the original review, attributed to the reviewer that found it
 - **Test results**: what passed, what failed, what wasn't testable
-- **Team composition**: which teammates were spawned and what each one handled
+- **Team composition**: which teammates were spawned and what each one handled — list both reviewers and how many times `/codex:adversarial-review` was used vs `/codex:review`
+- **Reviewer agreement rate**: what percentage of findings were flagged by both reviewers vs only one — this helps the user calibrate how much value the dual review adds
 - **Recommended follow-ups**: things to manually verify or test in a real environment
 
 ---
@@ -341,4 +428,10 @@ Risk is about the *fix complexity and blast radius*, not the bug severity. A P0 
 
 - **Contradictory fixes**: If two review items suggest conflicting changes, flag the conflict and ask the user to decide. Never silently pick one over the other.
 
-- **/review still flags it after 3 cycles**: If the reviewer has flagged the same issue 3 times and fixers can't resolve it, don't rationalize it away. The reviewer is probably right and the fix approach is wrong. Document exactly what `/review` is saying, mark it UNRESOLVED, and let the user decide the next step.
+- **/review still flags it after 3 cycles**: If a reviewer has flagged the same issue 3 times and fixers can't resolve it, don't rationalize it away. The reviewer is probably right and the fix approach is wrong. Document exactly what each reviewer is saying, mark it UNRESOLVED, and let the user decide the next step.
+
+- **Reviewer disagreement**: If the Claude Code Reviewer marks an issue as CONFIRMED FIXED but the Codex Reviewer still flags it (or vice versa), the issue is NOT confirmed fixed. Present both perspectives to the fixer and prioritize the more specific/detailed finding. If the reviewers genuinely disagree about whether something is a problem, escalate to the user.
+
+- **Codex Reviewer unavailable**: If `/codex:review` fails to run (plugin not installed, Codex CLI not configured, or any runtime error), fall back to single-reviewer mode using only `/review`. Warn the user that dual review is not available and suggest running `/codex:setup` to configure the Codex CLI. Do not block the entire workflow on the Codex Reviewer.
+
+- **Adversarial review false positives**: `/codex:adversarial-review` is intentionally more aggressive and may flag things that are not actual problems — it's designed to question the implementation, not just inspect it. If the adversarial review flags something that the Claude Code Reviewer did not flag and the fix clearly matches the original issue description, the lead should still present it to the fixer but note it as "adversarial-only finding — verify whether this is a genuine concern."

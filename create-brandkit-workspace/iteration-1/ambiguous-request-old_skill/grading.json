@@ -1,9 +1,0 @@
-{
-  "expectations": [
-    {"text": "Uses AskUserQuestion to ask what type of brand kit the user needs", "passed": false, "evidence": "Old skill has no branching question. Agent attempted AskUserQuestion for app-flow preferences (assets, colors, style, symbol) but NOT for app-vs-company brand kit type."},
-    {"text": "The question offers at least two options: one for app/product branding and one for company brand kit", "passed": false, "evidence": "The questions attempted were: 'Which assets should I generate?' (Just a logo / Logo + favicon / Full brand kit) — all app-level options. No 'Company brand kit' option."},
-    {"text": "Does NOT immediately start generating assets without first determining the brand kit type", "passed": false, "evidence": "Agent skipped brand kit type determination entirely and proceeded directly to app-flow asset generation after AskUserQuestion was unavailable."},
-    {"text": "Does NOT skip the branching question and assume app or company flow", "passed": false, "evidence": "Agent defaulted to app/product flow without any branching question. Generated logo + favicon + banner (app brand kit), not a company brand kit."}
-  ],
-  "summary": {"passed": 0, "failed": 4, "total": 4, "pass_rate": 0.0}
-}

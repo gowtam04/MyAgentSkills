@@ -1,9 +1,0 @@
-{
-  "expectations": [
-    {"text": "Uses AskUserQuestion to ask what type of brand kit the user needs", "passed": true, "evidence": "Transcript: 'Per the SKILL.md instructions (step 1a), this request is ambiguous... I attempted to use AskUserQuestion to determine the brand kit type... Question: What type of brand kit do you need?' Tool was unavailable but intent was correct."},
-    {"text": "The question offers at least two options: one for app/product branding and one for company brand kit", "passed": true, "evidence": "Transcript: 'Options: App / Product branding, Company brand kit, Just one asset' — matches the skill's step 1a template exactly."},
-    {"text": "Does NOT immediately start generating assets without first determining the brand kit type", "passed": true, "evidence": "Transcript shows AskUserQuestion attempt BEFORE any generation. Only proceeded to generation after fallback decision to use Company flow."},
-    {"text": "Does NOT skip the branching question and assume app or company flow", "passed": true, "evidence": "Agent explicitly identified request as ambiguous per step 1a, attempted branching question, then made a reasoned fallback to Company flow only after AskUserQuestion was unavailable."}
-  ],
-  "summary": {"passed": 4, "failed": 0, "total": 4, "pass_rate": 1.0}
-}

@@ -1,0 +1,23 @@
+{
+  "skill_name": "excalirender",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Convert the authentication account lifecycle diagram to a high-res PNG. The file is at diagrams/01-authentication-account-lifecycle.excalidraw",
+      "expected_output": "A PNG file rendered at 2x scale from the excalidraw source",
+      "files": ["diagrams/01-authentication-account-lifecycle.excalidraw"]
+    },
+    {
+      "id": 2,
+      "prompt": "I need the identity verification diagram exported as SVG with dark mode and transparent background. It's at diagrams/02-identity-verification.excalidraw",
+      "expected_output": "An SVG file rendered in dark mode with transparent background",
+      "files": ["diagrams/02-identity-verification.excalidraw"]
+    },
+    {
+      "id": 3,
+      "prompt": "Compare the system context diagram and the infrastructure deployment diagram side by side as a single image with labels. Files are diagrams/A1-system-context.excalidraw and diagrams/A2-infrastructure-deployment.excalidraw",
+      "expected_output": "A combined PNG with both diagrams laid out horizontally with filename labels",
+      "files": ["diagrams/A1-system-context.excalidraw", "diagrams/A2-infrastructure-deployment.excalidraw"]
+    }
+  ]
+}
