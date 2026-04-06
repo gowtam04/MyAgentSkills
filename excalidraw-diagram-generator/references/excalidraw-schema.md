@@ -46,7 +46,7 @@ interface BaseElement {
   opacity: number;             // 0-100
   groupIds: string[];          // IDs of groups this element belongs to
   frameId: null;               // Usually null
-  index: string;               // Stacking order identifier
+  index: string;               // Stacking order (fractional indexing — see Index Field Rules below)
   roundness: Roundness | null;
   seed: number;                // Random seed for deterministic rendering
   version: number;             // Element version (increment on edit)
@@ -291,6 +291,15 @@ const versionNonce = Math.floor(Math.random() * 2147483647);
 - `type` must match actual element type
 - `version` must be an integer ≥ 1
 - `opacity` must be 0-100
+
+✅ **Index Field (Critical):**
+- The `index` field uses **fractional indexing** (base-62). Invalid values cause import failures.
+- Use simple sequential values: `a0, a1, a2, ..., a9, aA, aB, ..., aZ, aa, ab, ..., az`
+- After `a9`, the next value is `aA` (uppercase A), **NOT** `a10`
+- For 62+ elements, use 2-digit prefix `b`: `b00, b01, ..., b09, b0A, ...`
+- **Never invent fractional keys** like `a1m0`, `a0V`, or `a5x` — these follow complex rules and are easy to get wrong
+- **Invalid examples**: `a10` (trailing zero in fraction), `a1m0` (trailing zero), `a00` (trailing zero)
+- **Valid examples**: `a0`, `a9`, `aA`, `aZ`, `az`, `b00`, `b0A`
 
 ⚠️ **Recommended:**
 - Keep `roughness` at 1 for consistency

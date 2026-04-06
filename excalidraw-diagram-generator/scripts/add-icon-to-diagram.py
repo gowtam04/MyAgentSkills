@@ -27,10 +27,22 @@ import uuid
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
 
+BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
 
 def generate_unique_id() -> str:
     """Generate a unique ID for Excalidraw elements."""
     return str(uuid.uuid4()).replace('-', '')[:16]
+
+
+def make_index(n: int) -> str:
+    """Generate a valid Excalidraw fractional index for position n."""
+    if n < 62:
+        return f"a{BASE62[n]}"
+    elif n < 62 * 62:
+        return f"b{BASE62[n // 62]}{BASE62[n % 62]}"
+    else:
+        return f"c{BASE62[n // 3844]}{BASE62[(n // 62) % 62]}{BASE62[n % 62]}"
 
 
 def calculate_bounding_box(elements: List[Dict[str, Any]]) -> Tuple[float, float, float, float]:
@@ -59,18 +71,20 @@ def calculate_bounding_box(elements: List[Dict[str, Any]]) -> Tuple[float, float
 
 
 def transform_icon_elements(
-    elements: List[Dict[str, Any]], 
-    target_x: float, 
-    target_y: float
+    elements: List[Dict[str, Any]],
+    target_x: float,
+    target_y: float,
+    start_index: int = 0
 ) -> List[Dict[str, Any]]:
     """
     Transform icon elements to target coordinates with unique IDs.
-    
+
     Args:
         elements: Icon elements from JSON file
         target_x: Target X coordinate (top-left position)
         target_y: Target Y coordinate (top-left position)
-    
+        start_index: Starting index offset for sequential index assignment
+
     Returns:
         Transformed elements with new coordinates and IDs
     """
@@ -101,9 +115,12 @@ def transform_icon_elements(
     
     # Transform elements
     transformed = []
-    for element in elements:
+    for idx, element in enumerate(elements):
         new_element = element.copy()
-        
+
+        # Assign valid sequential index
+        new_element['index'] = make_index(start_index + idx)
+
         # Update coordinates
         if 'x' in new_element:
             new_element['x'] = new_element['x'] + offset_x
@@ -213,15 +230,16 @@ def finalize_edit_path(work_path: Path, final_path: Path | None) -> None:
     work_path.rename(final_path)
 
 
-def create_text_label(text: str, x: float, y: float) -> Dict[str, Any]:
+def create_text_label(text: str, x: float, y: float, index: str = "a0") -> Dict[str, Any]:
     """
     Create a text label element.
-    
+
     Args:
         text: Label text
         x: X coordinate
         y: Y coordinate
-    
+        index: Fractional index for stacking order
+
     Returns:
         Text element dictionary
     """
@@ -242,7 +260,7 @@ def create_text_label(text: str, x: float, y: float) -> Dict[str, Any]:
         "opacity": 100,
         "groupIds": [],
         "frameId": None,
-        "index": "a0",
+        "index": index,
         "roundness": None,
         "seed": 1000000000 + hash(text) % 1000000000,
         "version": 1,
@@ -283,33 +301,36 @@ def add_icon_to_diagram(
         library_path: Path to the icon library directory
         label: Optional text label to add below the icon
     """
+    # Load diagram first to determine index offset
+    print(f"Loading diagram: {diagram_path}")
+    with open(diagram_path, 'r', encoding='utf-8') as f:
+        diagram = json.load(f)
+
+    existing_count = len(diagram.get('elements', []))
+
     # Load icon elements
     print(f"Loading icon: {icon_name}")
     icon_elements = load_icon(icon_name, library_path)
     print(f"  Loaded {len(icon_elements)} elements")
-    
-    # Transform icon elements
+
+    # Transform icon elements with proper index offset
     print(f"Transforming to position ({x}, {y})")
-    transformed_elements = transform_icon_elements(icon_elements, x, y)
-    
+    transformed_elements = transform_icon_elements(icon_elements, x, y, start_index=existing_count)
+
     # Calculate icon bounding box for label positioning
     if label and transformed_elements:
         min_x, min_y, max_x, max_y = calculate_bounding_box(transformed_elements)
         icon_width = max_x - min_x
         icon_height = max_y - min_y
-        
+
         # Position label below icon, centered
         label_x = min_x + (icon_width / 2) - (len(label) * 5)
         label_y = max_y + 10
-        
-        label_element = create_text_label(label, label_x, label_y)
+
+        label_index = make_index(existing_count + len(transformed_elements))
+        label_element = create_text_label(label, label_x, label_y, index=label_index)
         transformed_elements.append(label_element)
         print(f"  Added label: '{label}'")
-    
-    # Load diagram
-    print(f"Loading diagram: {diagram_path}")
-    with open(diagram_path, 'r', encoding='utf-8') as f:
-        diagram = json.load(f)
     
     # Add transformed elements
     if 'elements' not in diagram:

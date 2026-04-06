@@ -133,6 +133,7 @@ Create the `.excalidraw` file with appropriate elements:
 - **Font**: `fontFamily: 5` (Excalifont - **required for all text elements**)
 - **Text**: Embedded text for labels
 - **Connections**: `points` array for arrows
+- **Index**: `index` field controls stacking order. Assign sequentially: `a0, a1, ..., a9, aA, aB, ..., aZ, aa, ..., az`. After `a9` the next value is `aA` (uppercase A), **not** `a10`. Never invent fractional keys like `a1m0` — they will cause import failures.
 
 **Important**: All text elements must use `fontFamily: 5` (Excalifont) for consistent visual appearance.
 
@@ -189,6 +190,26 @@ Structure the complete Excalidraw file:
 4. **Text sizing**: 16-24px for readability
 5. **Font**: Always use `fontFamily: 5` (Excalifont) for all text elements
 6. **Arrow style**: Use straight arrows for simple flows, curved for complex relationships
+
+### Index Field (Stacking Order)
+
+Excalidraw uses fractional indexing for the `index` field on every element. Invalid index values will cause "Import failed: invalid order key" errors when opening the file. The rules are strict and easy to get wrong, so always use this simple sequential pattern:
+
+| Position | Index | Position | Index | Position | Index |
+|----------|-------|----------|-------|----------|-------|
+| 0        | `a0`  | 10       | `aA`  | 36       | `aa`  |
+| 1        | `a1`  | 11       | `aB`  | 37       | `ab`  |
+| ...      | ...   | ...      | ...   | ...      | ...   |
+| 9        | `a9`  | 35       | `aZ`  | 61       | `az`  |
+
+The character order is: `0-9` then `A-Z` then `a-z` (62 characters total). For diagrams with 62+ elements, use prefix `b` with 2 digits: `b00, b01, ...`
+
+**Rules:**
+1. Assign indexes sequentially starting from `a0` for the first element
+2. After `a9`, the next value is `aA` (uppercase A) — **never** `a10`
+3. Never invent fractional/intermediate keys (e.g., `a0V`, `a1m0`, `a5x`)
+4. Every element must have a unique index value
+5. The index determines rendering order: lower values render behind higher values
 
 ### Complexity Management
 
@@ -296,6 +317,7 @@ Before delivering the diagram:
 - [ ] Coordinates prevent overlapping
 - [ ] Text is readable (font size 16+)
 - [ ] **All text elements use `fontFamily: 5` (Excalifont)**
+- [ ] **All `index` values are valid sequential base-62 keys** (`a0`..`a9`, `aA`..`aZ`, `aa`..`az`) — no `a10`, `a1m0`, etc.
 - [ ] Arrows connect logically
 - [ ] Colors follow consistent scheme
 - [ ] File is valid JSON

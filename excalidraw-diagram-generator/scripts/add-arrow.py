@@ -24,10 +24,22 @@ import uuid
 from pathlib import Path
 from typing import Dict, Any
 
+BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
 
 def generate_unique_id() -> str:
     """Generate a unique ID for Excalidraw elements."""
     return str(uuid.uuid4()).replace('-', '')[:16]
+
+
+def make_index(n: int) -> str:
+    """Generate a valid Excalidraw fractional index for position n."""
+    if n < 62:
+        return f"a{BASE62[n]}"
+    elif n < 62 * 62:
+        return f"b{BASE62[n // 62]}{BASE62[n % 62]}"
+    else:
+        return f"c{BASE62[n // 3844]}{BASE62[(n // 62) % 62]}{BASE62[n % 62]}"
 
 
 def prepare_edit_path(diagram_path: Path, use_edit_suffix: bool) -> tuple[Path, Path | None]:
@@ -73,11 +85,12 @@ def create_arrow(
     to_y: float,
     style: str = "solid",
     color: str = "#1e1e1e",
-    label: str = None
+    label: str = None,
+    index_offset: int = 0
 ) -> list:
     """
     Create an arrow element.
-    
+
     Args:
         from_x: Starting X coordinate
         from_y: Starting Y coordinate
@@ -86,12 +99,13 @@ def create_arrow(
         style: Line style (solid, dashed, dotted)
         color: Arrow color
         label: Optional text label on the arrow
-    
+        index_offset: Starting index position for this element
+
     Returns:
         List of elements (arrow and optional label)
     """
     elements = []
-    
+
     # Arrow element
     arrow = {
         "id": generate_unique_id(),
@@ -110,7 +124,7 @@ def create_arrow(
         "opacity": 100,
         "groupIds": [],
         "frameId": None,
-        "index": "a0",
+        "index": make_index(index_offset),
         "roundness": {
             "type": 2
         },
@@ -156,7 +170,7 @@ def create_arrow(
             "opacity": 100,
             "groupIds": [],
             "frameId": None,
-            "index": "a0",
+            "index": make_index(index_offset + 1),
             "roundness": None,
             "seed": 1000000000 + hash(label) % 1000000000,
             "version": 1,
@@ -204,22 +218,21 @@ def add_arrow_to_diagram(
         color: Arrow color
         label: Optional text label
     """
-    print(f"Creating arrow from ({from_x}, {from_y}) to ({to_x}, {to_y})")
-    arrow_elements = create_arrow(from_x, from_y, to_x, to_y, style, color, label)
-    
-    if label:
-        print(f"  With label: '{label}'")
-    
-    # Load diagram
+    # Load diagram first to determine index offset
     print(f"Loading diagram: {diagram_path}")
     with open(diagram_path, 'r', encoding='utf-8') as f:
         diagram = json.load(f)
-    
-    # Add arrow elements
+
     if 'elements' not in diagram:
         diagram['elements'] = []
-    
+
     original_count = len(diagram['elements'])
+
+    print(f"Creating arrow from ({from_x}, {from_y}) to ({to_x}, {to_y})")
+    arrow_elements = create_arrow(from_x, from_y, to_x, to_y, style, color, label, index_offset=original_count)
+
+    if label:
+        print(f"  With label: '{label}'")
     diagram['elements'].extend(arrow_elements)
     print(f"  Added {len(arrow_elements)} elements (total: {original_count} -> {len(diagram['elements'])})")
     
