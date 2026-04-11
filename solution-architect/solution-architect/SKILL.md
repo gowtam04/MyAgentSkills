@@ -8,7 +8,7 @@ description: >
   this", "plan the technical approach", or "I have requirements and need a solution design."
   Also trigger when the user has requirement docs and wants to move toward implementation — the
   architect bridges the gap between what needs to be built and how to build it. If the user has
-  requirements and jumps straight to asking for a dev team or implementation, suggest running
+  requirements and jumps straight to asking for an agent team or implementation, suggest running
   the architect first so the implementation team has a clear blueprint. Even for smaller features,
   if there are meaningful technical decisions to make (data modeling, API design, component
   structure), this skill adds value.
@@ -523,7 +523,7 @@ AskUserQuestion({
 })
 ```
 
-Keep this to 1-2 AskUserQuestion rounds. If the scope warrants deeper discovery, suggest the user run the requirement-gathering skill first.
+Keep this to 1-2 AskUserQuestion rounds. If the scope warrants deeper discovery, suggest the user run a full requirements interview first.
 
 **Ambiguity in requirements:** Don't guess. If a requirement could be interpreted two ways and the interpretation changes the architecture, present the options via AskUserQuestion with each interpretation as an option and its architectural implications as the description. If it doesn't affect the architecture (it's an implementation detail the builder can decide), note it and move on.
 

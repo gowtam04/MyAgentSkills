@@ -38,14 +38,14 @@ This means:
 
 ## Core Principles
 
-1. **The lead never writes code.** You coordinate, verify, and manage. Use delegate mode (Shift+Tab) if available.
+1. **The lead never writes code and never runs tests, builds, or type checks directly.** You coordinate, verify, and manage — test execution is delegated to the `test-runner` teammate (see Step 3). Use delegate mode (Shift+Tab) if available.
 2. **The lead never architects.** Technical design decisions have already been made by the solution architect. Your job is to translate the architecture into task assignments, not to redesign it. If the architecture docs are missing or incomplete, tell the user — don't fill in the gaps yourself.
 3. **Maximize parallelism, minimize idle teammates.** The point of an agent team is parallel work — but only spawn teammates that have unblocked tasks ready to work on. Never spawn a teammate just to have it wait. Shut teammates down as soon as their tasks are complete.
 4. **Test-driven development.** Tests are written first by a dedicated test-author, reviewed for quality, then implementers make them pass.
 5. **Tests get reviewed before implementation.** The reviewer checks test coverage and quality against the architecture before any implementation begins. Weak tests produce weak implementations — catch gaps early.
 6. **Information isolation.** The test-author never sees implementation code — only requirement docs, architecture docs (especially interface definitions), and test pattern references. This ensures tests verify the spec, not the implementation. The integration-tester is the exception — they need to see implementation to test cross-component seams.
 7. **Always have a reviewer.** A dedicated reviewer teammate checks both tests (before implementation) and implementation (after). The reviewer never writes code.
-8. **Regression testing between phases.** After every phase, the lead runs ALL tests from ALL completed phases — not just the current one. Later phases can break earlier work, and catching regressions immediately is critical.
+8. **Regression testing between phases.** After every phase, the lead spawns a `test-runner` to execute ALL tests from ALL completed phases — not just the current one — and reads its summary. Later phases can break earlier work, and catching regressions immediately is critical.
 9. **Integration testing at seams.** Unit tests verify individual components; integration tests verify they work together. Spawn an integration-tester at natural boundaries where multiple phases connect.
 10. **Document what you build.** A docs teammate writes documentation near the end so it reflects the actual implementation, not just the plan.
 11. **Progress tracking.** Always maintain a progress file to track the build.
@@ -71,6 +71,9 @@ Check the architecture docs for a **Requirements Reference** path — it will po
 - Understanding acceptance criteria for user stories
 - Clarifying business rules when the architecture docs reference them
 - Giving the reviewer context on what the feature is supposed to accomplish from the user's perspective
+
+### Design system (auto-detect for UI work)
+If the project involves building or modifying UI, check for a design system document at `/docs/design-system.md` (default location) — or wherever the architecture docs point. A design system defines the visual language: color palette, typography, spacing, component patterns, and layout conventions. If one exists, record its path — you'll need to pass it to every frontend teammate in their spawn prompt (see Step 3). If the project has UI work but no design system is found, flag it to the user and suggest they run the **design-system** skill first so the UI comes out consistent rather than ad-hoc. Don't let frontend teammates invent their own visual language on the fly.
 
 ### If neither exists
 If there are no architecture docs and no requirements docs, tell the user. Recommend they either:
@@ -101,6 +104,15 @@ Choose teammates based on what the architecture calls for. The implementation ph
 ### Required roles (always):
 - **test-author**: Writes all unit/component tests per phase. Receives requirements docs, architecture docs (especially interface definitions and data model), and test pattern references. NEVER receives implementation code.
 - **reviewer**: Reviews tests and implementation against architecture and requirements. Receives everything — requirements, architecture, tests, AND implementation. Never writes code. Also reviews test quality before implementation begins (see Phase N.1.75).
+- **test-runner**: Executes test suites, type checks, and build commands on demand and reports a concise structured summary to the lead. Short-lived and disposable — spawned just-in-time at each verification moment (Phase N.1.5 RED check, between-phases regression, MUST-FIX re-verification, Final Verification) and shut down immediately after. **Always fresh — never reused across verifications**, because the whole point of this role is to keep noisy test output out of any long-running context. The lead passes exact commands, the project root, an `expected outcome` (`all-pass` / `all-fail` / `specific-files-must-fail`), and a summary file path in the spawn prompt. The test-runner writes the summary file and messages the lead with its location. The test-runner does **NOT** diagnose failures beyond one-line reasons, does **NOT** retry or re-run, does **NOT** classify regressions (that's the lead's job against the progress file), does **NOT** fix anything, and does **NOT** read architecture/requirements/source files (a minimal context is the whole point). Not to be confused with `integration-tester`, which *writes* integration tests — the `test-runner` only *executes* tests that already exist.
+
+  **Summary file schema** (structured markdown or JSON, target <2KB in the green case):
+  - `command` — exact command executed
+  - `exit_code`
+  - `total`, `passed`, `failed`, `skipped`, `duration`
+  - `failures[]` — each: `file`, `test_name`, `one_line_reason` (no stack traces)
+  - `unexpected_passes[]` — for `all-fail` mode, tests that passed when they should have failed
+  - `typecheck_status` / `build_status` — populated in Final Verification mode
 
 ### Specialized roles (use when applicable):
 - **integration-tester**: Writes tests that exercise full workflows across multiple components — the seams between phases. Spawned at natural integration boundaries, not every phase. See "Integration Testing" section below for when and how to use this role. Unlike the test-author, the integration-tester DOES see implementation code — they need to understand what's actually built to test how components interact.
@@ -120,6 +132,15 @@ These are examples, not a fixed menu. Name roles based on what they actually do.
 
 **When the architecture doesn't clearly suggest team composition, ask the user.**
 
+### Frontend / UI teammates — extra requirements
+
+Any teammate that builds or modifies UI (frontend-dev, mobile-dev, or any role touching visual components) has two non-negotiable instructions that must appear in their spawn prompt:
+
+1. **Read the design system.** Point them at the design system doc you discovered in Step 1 (default: `/docs/design-system.md`). They must treat it as the source of truth for colors, typography, spacing, component patterns, and layout conventions. Ad-hoc visual choices create drift; the design system exists so every screen feels like it belongs to the same product.
+2. **Use the `frontend-design` skill.** Tell them explicitly: "Use the `frontend-design` skill when building UI components or pages." This skill encodes patterns for producing distinctive, production-grade interfaces and is how we get consistent quality across teammates. Without it, frontend output tends toward generic boilerplate.
+
+These apply to the test-author too when they're writing tests for UI components — tests should reference the design system's component patterns so they verify the right visual contracts.
+
 ### Model requirement:
 All teammates must use the **user's default selected model**. When spawning teammates, do not override or downgrade the model — every teammate should run on the same model the user has configured for their Claude Code session.
 
@@ -127,13 +148,14 @@ All teammates must use the **user's default selected model**. When spawning team
 - **No more than 3 active teammates at a time** (recommended). Shut down a teammate when their work is done before spawning the next.
 - For very complex tasks where you really need it, you can go up to 5 active teammates — but this is exceptional.
 - **Two teammates must never edit the same file.** The architecture's file structure is the ownership map — use it to assign files to teammates without overlap.
+- **The `test-runner` is typically spawned alone during verification windows** (Phase N.1.5, between phases, MUST-FIX re-verification, Final Verification) and does not compete for slots with implementers — those windows are serialization points by design.
 
 ## Step 4: Create Phased Tasks
 
 The architecture's implementation plan gives you phases with dependencies and parallel opportunities already identified. Translate those phases into the TDD cycle:
 
 ```
-test-author writes tests → lead verifies they fail → reviewer checks test quality → implementer makes tests pass → reviewer checks implementation
+test-author writes tests → test-runner confirms they fail (lead reads summary) → reviewer checks test quality → implementer makes tests pass → reviewer checks implementation → test-runner runs regression (lead reads summary)
 ```
 
 ### Map architecture phases to TDD cycles
@@ -149,8 +171,8 @@ Tell the test-author:
 
 CRITICAL: Never point the test-author at implementation files. Only: requirement docs, architecture docs (interface definitions, data model, component descriptions), and test pattern references.
 
-**Phase N.1.5 — Verify tests fail (lead does this, not a teammate)**
-Before spawning the reviewer, run the new test suite yourself. Every new test should **fail**. This is the RED step of TDD — it confirms the tests are actually testing something that doesn't exist yet. If any new tests pass before implementation, they're either testing the wrong thing or the functionality already exists. Investigate before proceeding.
+**Phase N.1.5 — Verify tests fail (delegated to `test-runner`)**
+Before spawning the reviewer, spawn a fresh `test-runner` with the new test file paths and `expected outcome: all-fail`. Every new test should **fail** — this is the RED step of TDD, confirming the tests are actually testing something that doesn't exist yet. Read the test-runner's summary file: any entry in `unexpected_passes[]` means a test is either testing the wrong thing or the functionality already exists — investigate before proceeding. Shut the test-runner down as soon as you've read its summary.
 
 **Phase N.1.75 — Review tests** (assign to reviewer, BLOCKED by N.1)
 Before implementation begins, spawn the reviewer to check test quality. Weak tests lead to weak implementations — catching coverage gaps now is far cheaper than catching them after code is written. Tell the reviewer:
@@ -194,15 +216,15 @@ Within a single phase, the architecture may note that certain components are ind
 
 ### Handling MUST-FIX items:
 1. Re-spawn the original implementer teammate with the fix task (they will have been shut down already — give them full context in the spawn prompt)
-2. After the fix, shut down the teammate and run tests yourself (the lead) to verify
+2. After the fix, shut down the teammate and spawn a fresh `test-runner` to verify (read its summary; do not run tests directly)
 3. If the fix is trivial and tests pass, skip re-review
 4. If the fix is substantive, spawn the reviewer again for re-review
 5. **Maximum 3 fix cycles.** If still not fixed after 3 rounds, document the issue in the progress file and move on. Flag it to the user.
 
 ### Between phases:
 After each phase completes (review done, any MUST-FIX resolved):
-1. **Run the FULL test suite — all phases, not just the current one.** Phase 5 can easily break something from Phase 2. Run every test from every completed phase to catch regressions early. If any previous phase's tests fail, stop and fix the regression before proceeding — re-spawn the relevant implementer with context about what broke and why.
-2. Run type checking and attempt a build (whatever is appropriate for the project)
+1. **Spawn a fresh `test-runner`** to execute the FULL test suite — all phases, not just the current one — plus type checking and a build attempt. Pass it the exact commands, `expected outcome: all-pass`, and a summary file path. Phase 5 can easily break something from Phase 2, so running everything is non-negotiable. Wait for the summary file, then shut the test-runner down.
+2. **Read the summary and classify.** Any previously-green test that now fails is a regression — cross-reference against the progress file to tell the difference between "this phase's new tests" and "something that used to pass". If any previous phase's tests fail, stop and fix the regression before proceeding — re-spawn the relevant implementer with context about what broke and why. **If a failure looks flaky**, spawn a *second fresh* test-runner rather than asking the first to retry — fresh context = clean signal, and the test-runner role explicitly forbids retries.
 3. Update the progress tracking file
 4. If green, proceed to the next phase immediately — do NOT wait for user approval
 
@@ -239,7 +261,7 @@ Good (what TO do):
 3. **Shut down finished teammates promptly.** Every minute an idle teammate runs is wasted tokens.
 4. **Spawn the next wave** of teammates whose tasks just unblocked.
 5. **Monitor progress** — check in on teammates, redirect if they're going down a rabbit hole.
-6. **Verify results** when a teammate finishes — run tests, check types, read output files.
+6. **Verify results** when a teammate finishes — read their output files, and when test/typecheck/build verification is needed, spawn a fresh `test-runner` and read its summary (never run these commands from the lead session directly).
 7. **Update progress** after each completed task.
 
 Think of it like a pipeline: there should always be work in flight, but never idle workers on the clock.
@@ -253,6 +275,7 @@ When you send a task to a teammate, always tell them:
 - What files to create or modify
 - Clear success criteria
 - Any constraints, technical decisions, or conventions they must follow
+- **If the teammate is building or modifying UI**: the path to the design system doc (default `/docs/design-system.md`) AND an explicit instruction to use the `frontend-design` skill. See the "Frontend / UI teammates" section in Step 3 for why these are non-negotiable.
 
 Since teammates can read files on disk, give them file paths rather than pasting contents. But for small, critical snippets (like a specific interface or a key convention), it's fine to include them directly in the message for emphasis.
 
@@ -356,11 +379,11 @@ Always create and maintain a progress tracking file. Default location: `docs/fea
 | 1 | Test Review | reviewer | ⬜ | |
 | 1 | Implement | [role] | ⬜ | |
 | 1 | Impl Review | reviewer | ⬜ | |
-| 1 | Regression | lead | ⬜ | |
+| 1 | Regression | test-runner | ⬜ | |
 | ... | ... | ... | ⬜ | |
 | — | Integration Tests | integration-tester | ⬜ | |
 | — | Documentation | docs | ⬜ | |
-| — | Final Verification | lead | ⬜ | |
+| — | Final Verification | test-runner + lead | ⬜ | |
 
 ## Test Results
 (test run summaries after each phase, including regression results)
@@ -459,10 +482,9 @@ Have the reviewer check the docs teammate's output — a quick pass to verify ac
 ## Final Verification
 
 After all phases, integration testing, and documentation are complete:
-1. Run the full test suite (all unit tests + integration tests)
-2. Run type checking
-3. Attempt a full build
-4. Verify documentation is consistent with the final implementation
-5. Update the progress file status to COMPLETE
-6. **Clean up the team from the lead session** — always shut down any remaining teammates from the lead. Teammates should not run cleanup because their team context may not resolve correctly.
-7. Report results to the user with a summary of what was built, any open SHOULD-FIX items, any issues that hit the 3-cycle limit, and a pointer to the documentation
+1. **Spawn a fresh `test-runner` in "final verification" mode.** Pass it the commands for the full test suite (all unit tests + integration tests), type checking, and a full build, with `expected outcome: all-pass`. The summary file should populate `typecheck_status` and `build_status` in addition to the usual test fields. Wait for the summary, then shut the test-runner down.
+2. **Read the summary.** Any failures, type errors, or build errors must be resolved before the build is marked COMPLETE — re-spawn the relevant implementer to fix, then spawn another fresh test-runner to re-verify. Do not run any of these commands from the lead session directly.
+3. Verify documentation is consistent with the final implementation
+4. Update the progress file status to COMPLETE
+5. **Clean up the team from the lead session** — always shut down any remaining teammates from the lead, including the final `test-runner` if still alive. Teammates should not run cleanup because their team context may not resolve correctly.
+6. Report results to the user with a summary of what was built, any open SHOULD-FIX items, any issues that hit the 3-cycle limit, and a pointer to the documentation

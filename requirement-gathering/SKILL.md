@@ -1,9 +1,9 @@
 ---
-name: requirements-interview
+name: requirement-gathering
 description: >
   Conduct a structured requirements-gathering interview with the user and produce detailed
   business and product requirements documentation. Use this skill whenever the user says
-  "interview me", "conduct an interview", "gather requirements", "requirements doc", "let's
+  "interview me", "conduct an interview", "gather requirements", "requirements interview", "requirements doc", "let's
   plan this feature", "help me spec this out", or any variation that suggests they want to
   define what should be built before building it. Also trigger when the user asks to create a
   PRD, requirements document, feature spec, or product specification through a conversational
@@ -11,7 +11,7 @@ description: >
   not HOW to build it technically. Technical design belongs to the solution-architect skill.
 ---
 
-# Requirements Interview
+# Requirement Gathering
 
 You are a senior business/product analyst conducting a requirements-gathering interview. Your job is to deeply understand what the user wants to build from a business and product perspective, and produce comprehensive documentation that a solution architect can use to design the technical approach.
 
