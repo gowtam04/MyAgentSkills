@@ -73,7 +73,7 @@ Check the architecture docs for a **Requirements Reference** path — it will po
 - Giving the reviewer context on what the feature is supposed to accomplish from the user's perspective
 
 ### Design system (auto-detect for UI work)
-If the project involves building or modifying UI, check for a design system document at `/docs/design-system.md` (default location) — or wherever the architecture docs point. A design system defines the visual language: color palette, typography, spacing, component patterns, and layout conventions. If one exists, record its path — you'll need to pass it to every frontend teammate in their spawn prompt (see Step 3). If the project has UI work but no design system is found, flag it to the user and suggest they run the **design-system** skill first so the UI comes out consistent rather than ad-hoc. Don't let frontend teammates invent their own visual language on the fly.
+If the project involves building or modifying UI, check for a design system document at `/docs/design-system.md` (default location) — or wherever the architecture docs point. A design system defines the visual language: color palette, typography, spacing, component patterns, and layout conventions. **If one exists**, record its path — you'll pass it to every frontend teammate in their spawn prompt (see Step 3) so the UI stays consistent. **If one doesn't exist, that's fine — proceed normally.** Don't stop to ask the user, and don't recommend running the `design-system` skill. Frontend teammates will still use the `frontend-design` skill for visual quality; the design system doc is a bonus when it's there, not a prerequisite.
 
 ### If neither exists
 If there are no architecture docs and no requirements docs, tell the user. Recommend they either:
@@ -134,12 +134,12 @@ These are examples, not a fixed menu. Name roles based on what they actually do.
 
 ### Frontend / UI teammates — extra requirements
 
-Any teammate that builds or modifies UI (frontend-dev, mobile-dev, or any role touching visual components) has two non-negotiable instructions that must appear in their spawn prompt:
+Any teammate that builds or modifies UI (frontend-dev, mobile-dev, or any role touching visual components) has the following requirements in their spawn prompt:
 
-1. **Read the design system.** Point them at the design system doc you discovered in Step 1 (default: `/docs/design-system.md`). They must treat it as the source of truth for colors, typography, spacing, component patterns, and layout conventions. Ad-hoc visual choices create drift; the design system exists so every screen feels like it belongs to the same product.
-2. **Use the `frontend-design` skill.** Tell them explicitly: "Use the `frontend-design` skill when building UI components or pages." This skill encodes patterns for producing distinctive, production-grade interfaces and is how we get consistent quality across teammates. Without it, frontend output tends toward generic boilerplate.
+1. **Use the `frontend-design` skill.** Tell them explicitly: "Use the `frontend-design` skill when building UI components or pages." This skill encodes patterns for producing distinctive, production-grade interfaces and is how we get consistent quality across teammates. Without it, frontend output tends toward generic boilerplate. **This applies on every UI task, regardless of whether a design system doc exists.**
+2. **If you discovered a design system doc in Step 1, point them at it.** Include its path (default: `/docs/design-system.md`) and tell them to treat it as the source of truth for colors, typography, spacing, component patterns, and layout conventions. If no design system doc exists, skip this — don't fabricate one, and don't block on its absence.
 
-These apply to the test-author too when they're writing tests for UI components — tests should reference the design system's component patterns so they verify the right visual contracts.
+The same conditional applies to the test-author when writing tests for UI components: if a design system exists, tests should reference its component patterns; otherwise, tests verify behavior against the `frontend-design` output directly.
 
 ### Model requirement:
 All teammates must use the **user's default selected model**. When spawning teammates, do not override or downgrade the model — every teammate should run on the same model the user has configured for their Claude Code session.
@@ -275,7 +275,7 @@ When you send a task to a teammate, always tell them:
 - What files to create or modify
 - Clear success criteria
 - Any constraints, technical decisions, or conventions they must follow
-- **If the teammate is building or modifying UI**: the path to the design system doc (default `/docs/design-system.md`) AND an explicit instruction to use the `frontend-design` skill. See the "Frontend / UI teammates" section in Step 3 for why these are non-negotiable.
+- **If the teammate is building or modifying UI**: always include an explicit instruction to use the `frontend-design` skill. **Additionally**, if you discovered a design system doc in Step 1, include its path (default `/docs/design-system.md`) so they can honor the established visual language. If no design system exists, omit that line — don't block and don't ask the user. See the "Frontend / UI teammates" section in Step 3 for why.
 
 Since teammates can read files on disk, give them file paths rather than pasting contents. But for small, critical snippets (like a specific interface or a key convention), it's fine to include them directly in the message for emphasis.
 
