@@ -73,7 +73,7 @@ Check the architecture docs for a **Requirements Reference** path — it will po
 - Giving the reviewer context on what the feature is supposed to accomplish from the user's perspective
 
 ### Design system (auto-detect for UI work)
-If the project involves building or modifying UI, check for a design system document at `/docs/design-system.md` (default location) — or wherever the architecture docs point. A design system defines the visual language: color palette, typography, spacing, component patterns, and layout conventions. **If one exists**, record its path — you'll pass it to every frontend teammate in their spawn prompt (see Step 3) so the UI stays consistent. **If one doesn't exist, that's fine — proceed normally.** Don't stop to ask the user, and don't recommend running the `design-system` skill. Frontend teammates will still use the `frontend-design` skill for visual quality; the design system doc is a bonus when it's there, not a prerequisite.
+If the project involves building or modifying UI, check for a design system document at `/docs/design-system/design-system.md` (default location) — or wherever the architecture docs point. A design system defines the visual language: color palette, typography, spacing, component patterns, and layout conventions. **If one exists**, record its path — you'll pass it to every frontend teammate in their spawn prompt (see Step 3) so the UI stays consistent. **If one doesn't exist, that's fine — proceed normally.** Don't stop to ask the user, and don't recommend running the `design-system` skill. Frontend teammates will still use the `frontend-design` skill for visual quality; the design system doc is a bonus when it's there, not a prerequisite.
 
 ### If neither exists
 If there are no architecture docs and no requirements docs, tell the user. Recommend they either:
@@ -137,7 +137,7 @@ These are examples, not a fixed menu. Name roles based on what they actually do.
 Any teammate that builds or modifies UI (frontend-dev, mobile-dev, or any role touching visual components) has the following requirements in their spawn prompt:
 
 1. **Use the `frontend-design` skill.** Tell them explicitly: "Use the `frontend-design` skill when building UI components or pages." This skill encodes patterns for producing distinctive, production-grade interfaces and is how we get consistent quality across teammates. Without it, frontend output tends toward generic boilerplate. **This applies on every UI task, regardless of whether a design system doc exists.**
-2. **If you discovered a design system doc in Step 1, point them at it.** Include its path (default: `/docs/design-system.md`) and tell them to treat it as the source of truth for colors, typography, spacing, component patterns, and layout conventions. If no design system doc exists, skip this — don't fabricate one, and don't block on its absence.
+2. **If you discovered a design system doc in Step 1, point them at it.** Include its path (default: `/docs/design-system/design-system.md`) and tell them to treat it as the source of truth for colors, typography, spacing, component patterns, and layout conventions. If no design system doc exists, skip this — don't fabricate one, and don't block on its absence.
 
 The same conditional applies to the test-author when writing tests for UI components: if a design system exists, tests should reference its component patterns; otherwise, tests verify behavior against the `frontend-design` output directly.
 
@@ -275,7 +275,7 @@ When you send a task to a teammate, always tell them:
 - What files to create or modify
 - Clear success criteria
 - Any constraints, technical decisions, or conventions they must follow
-- **If the teammate is building or modifying UI**: always include an explicit instruction to use the `frontend-design` skill. **Additionally**, if you discovered a design system doc in Step 1, include its path (default `/docs/design-system.md`) so they can honor the established visual language. If no design system exists, omit that line — don't block and don't ask the user. See the "Frontend / UI teammates" section in Step 3 for why.
+- **If the teammate is building or modifying UI**: always include an explicit instruction to use the `frontend-design` skill. **Additionally**, if you discovered a design system doc in Step 1, include its path (default `/docs/design-system/design-system.md`) so they can honor the established visual language. If no design system exists, omit that line — don't block and don't ask the user. See the "Frontend / UI teammates" section in Step 3 for why.
 
 Since teammates can read files on disk, give them file paths rather than pasting contents. But for small, critical snippets (like a specific interface or a key convention), it's fine to include them directly in the message for emphasis.
 
