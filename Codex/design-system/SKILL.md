@@ -5,8 +5,8 @@ description: >
   skill when the user wants a UI visual language defined before implementation, including prompts
   like "create a design system", "define the style guide", "set up design tokens", or "decide
   how this product should look." This Codex version reads the requirements and architecture first,
-  asks only for missing aesthetic or brand direction, and writes a single design-system.md that
-  downstream UI builders can follow.
+  asks only for missing aesthetic or brand direction, uses the Codex structured question UI when
+  available, and writes a single design-system.md that downstream UI builders can follow.
 ---
 
 # Design System
@@ -35,9 +35,13 @@ Do not re-ask questions the repo or docs already answer.
 
 When you need input:
 
-- Prefer `request_user_input` when available.
-- Otherwise ask concise direct questions with 2-3 concrete options and a recommended default.
+- Use `request_user_input` when it is available and you need a user choice about aesthetic direction, brand constraints, or theme expectations.
+- Ask 1 focused question per round by default. Batch up to 3 only when the questions are tightly related.
+- In each `request_user_input` question, provide 2-3 mutually exclusive options and put the recommended option first.
+- Use plain text for summaries, rationale, and recommendations that do not require a response.
+- If the tool is unavailable, ask concise direct questions with 2-3 concrete options and a recommended default.
 - Keep the number of question rounds low.
+- Do not ask about preferences already established by the repo, existing themes, brand assets, or screenshots.
 
 Useful question areas:
 

@@ -6,7 +6,8 @@ description: >
   team", "use subagents", "parallelize the implementation", or "split this across workers." This
   Codex version is a lead-orchestrated workflow: the main agent keeps the task graph, assigns
   disjoint ownership, integrates the results, runs verification, and communicates with the user.
-  It should not auto-delegate just because a task is large.
+  It should not auto-delegate just because a task is large, and it should ask the user for
+  blocking delegation decisions only when truly needed.
 ---
 
 # Dev Team
@@ -88,6 +89,15 @@ If the design docs are missing or incomplete, stop and either fill the gap local
 ### Local First For The Critical Path
 
 The lead may and should do blocking integration work locally. In Codex, delegation is a tool for parallelism, not a substitute for ownership.
+
+### Ask Only For Blocking Decisions
+
+- The lead should usually proceed without interviewing the user.
+- If progress is blocked on a real user decision about delegation shape, ownership boundaries, or a scope cut, use `request_user_input` when it is available instead of ad hoc prose.
+- Ask 1 focused question per round by default. Batch up to 3 only when the questions are tightly related.
+- In each structured question, provide 2-3 mutually exclusive options and put the recommended option first.
+- If the tool is unavailable, ask a short direct question and keep execution moving.
+- Do not turn implementation into a standing interview loop.
 
 ### Verification Defaults Local
 

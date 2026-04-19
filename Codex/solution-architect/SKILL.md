@@ -6,8 +6,8 @@ description: >
   before implementation. Trigger on requests like "design the architecture", "plan how to build
   this", "create a technical design", or "turn these requirements into an implementation plan."
   This Codex version reads requirements and the existing codebase first, asks only questions that
-  materially change the architecture, and produces decision-complete design docs plus an
-  implementation blueprint.
+  materially change the architecture, uses the Codex structured question UI for those decisions
+  when available, and produces decision-complete design docs plus an implementation blueprint.
 ---
 
 # Solution Architect
@@ -36,9 +36,13 @@ If requirements are missing and the problem is still fuzzy, do minimal discovery
 
 When user input is necessary:
 
-- Prefer `request_user_input` when available.
-- Otherwise ask concise direct questions with concrete options and a recommended default.
+- Exhaust repo discovery first. Do not ask the user about facts the codebase, docs, configs, or existing interfaces can answer.
+- If `request_user_input` is available, use it for architecture decisions that materially change boundaries, interfaces, data flow, rollout, or operational posture.
+- Ask 1 focused question per round by default. Batch up to 3 only when the questions are tightly related.
+- In each `request_user_input` question, provide 2-3 mutually exclusive options and put the recommended option first.
+- If the tool is unavailable, ask concise direct questions with concrete options and a recommended default.
 - Limit questions to decisions that materially affect architecture, interfaces, data flow, or rollout.
+- If a builder could safely resolve the detail during implementation, make a reasonable assumption and document it instead of asking.
 
 Good question areas:
 
