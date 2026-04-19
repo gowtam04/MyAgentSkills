@@ -1,52 +1,50 @@
 # MyAgentSkills
 
-A library of Claude Code skills — self-contained modules that extend Claude with specialized, domain-focused workflows.
+A small workflow-oriented skill library with two parallel packs:
 
-## What is a Skill?
+- The original Claude Code versions in the repo root
+- A Codex-native migration pack in [`codex/`](/Users/Gowtam/MyAgentSkills/workspace/codex/README.md)
 
-A skill is a directory containing a `SKILL.md` file that teaches Claude how to handle a specific category of task. When you describe a task that matches a skill's trigger phrases, Claude loads the skill's instructions and follows a structured workflow designed for that domain.
+The four skills in this folder were designed to work together to take a product idea from discovery to implementation:
 
-Skills are triggered by natural language — you don't need to remember commands.
+1. `requirement-gathering` defines what should be built and why.
+2. `solution-architect` turns those requirements into a technical design.
+3. `design-system` defines the visual language for UI-heavy work.
+4. `dev-team` executes the approved design.
 
-## Skills
+## Repo Layout
 
-| Skill | What it does | Example triggers |
-|---|---|---|
-| [`dev-team`](./dev-team/) | Orchestrate multi-agent teams to build features and applications in parallel | "build this with a team", "set up agents for this project" |
-| [`code-review-agent-team`](./code-review-agent-team/) | Review and fix code using independent reviewer and fixer agents | "review and fix my code", "fix the review issues" |
-| [`create-brandkit`](./create-brandkit/) | Generate logos, icons, favicons, banners, and full company brand kits | "create a logo", "set up our company branding" |
-| [`excalidraw-diagram-generator`](./excalidraw-diagram-generator/) | Create flowcharts, architecture diagrams, and mind maps as `.excalidraw` files | "create a diagram", "visualize this process" |
-| [`find-skills`](./find-skills/) | Discover and install skills from the open agent skills ecosystem | "find a skill for X", "is there a skill that can..." |
-| [`fly-deploy`](./fly-deploy/) | Configure and deploy Docker-based applications to Fly.io | "deploy this to fly", "set up fly for my app" |
-| [`frontend-design`](./frontend-design/) | Build production-grade UIs with strong aesthetic direction — no generic AI output | "build a landing page", "design a dashboard" |
-| [`requirement-gathering`](./requirement-gathering/) | Conduct structured interviews to produce business and product requirements docs | "interview me", "help me spec this out" |
-| [`seo-audit`](./seo-audit/) | Audit and diagnose SEO issues with a prioritized action plan | "SEO audit", "why am I not ranking" |
-| [`skill-creator`](./skill-creator/) | Create, improve, benchmark, and evaluate skills | "create a new skill", "improve this skill" |
-| [`solution-architect`](./solution-architect/) | Design technical solutions from business requirements — data model, APIs, implementation plan | "design the architecture", "how should we build this" |
+### Claude-origin pack
 
-## Skill Structure
+- [requirement-gathering](/Users/Gowtam/MyAgentSkills/workspace/requirement-gathering/SKILL.md)
+- [solution-architect](/Users/Gowtam/MyAgentSkills/workspace/solution-architect/SKILL.md)
+- [design-system](/Users/Gowtam/MyAgentSkills/workspace/design-system/SKILL.md)
+- [dev-team](/Users/Gowtam/MyAgentSkills/workspace/dev-team/SKILL.md)
 
-Each skill directory follows a standard layout:
+### Codex migration pack
 
-```
-skill-name/
-├── SKILL.md          # Core skill definition (YAML frontmatter + instructions)
-├── scripts/          # Executable helper scripts (Python/bash)
-├── references/       # Reference documentation loaded on demand
-├── assets/           # Templates, icons, and static files
-└── evals/            # Test cases and evaluation data
-```
+- [codex/README.md](/Users/Gowtam/MyAgentSkills/workspace/codex/README.md)
+- [codex/requirement-gathering](/Users/Gowtam/MyAgentSkills/workspace/codex/requirement-gathering/SKILL.md)
+- [codex/solution-architect](/Users/Gowtam/MyAgentSkills/workspace/codex/solution-architect/SKILL.md)
+- [codex/design-system](/Users/Gowtam/MyAgentSkills/workspace/codex/design-system/SKILL.md)
+- [codex/dev-team](/Users/Gowtam/MyAgentSkills/workspace/codex/dev-team/SKILL.md)
 
-The `SKILL.md` `description` field controls when Claude triggers the skill. The body contains the detailed instructions Claude follows when the skill is active.
+## Why The Codex Pack Exists
 
-## Installing a Skill
+The original skills assume Claude Code-specific interaction patterns such as `AskUserQuestion` and Agent Teams. The Codex pack keeps the same overall workflow and document handoffs, but translates those mechanics to Codex-native behavior:
 
-To install a skill into Claude Code, copy the skill directory into your project's `.claude/skills/` folder, or use the `find-skills` skill to search and install from the ecosystem:
+- Structured prompts become `request_user_input` when available, with concise direct questions as the fallback.
+- Agent Teams become lead-orchestrated Codex subagents, only when the user explicitly asks for delegation or parallel workers.
+- Shared task lists and teammate mailboxes are replaced by a single lead agent that owns planning, integration, verification, and user communication.
 
-```
-npx skills install <skill-name>
-```
+## Shared Artifact Paths
 
-## Creating New Skills
+Both packs preserve the same handoff locations so the workflow stays compatible:
 
-Use the [`skill-creator`](./skill-creator/) skill — it guides you through drafting, testing, evaluating, and iterating on a new skill.
+- Requirements: `/docs/requirements/` or `/docs/features/{feature-name}/requirements/`
+- Architecture: `/docs/architecture/` or `/docs/features/{feature-name}/architecture/`
+- Design system: `/docs/design-system/design-system.md`
+
+## Evaluation
+
+Transcript-style migration checks live in [codex/evals/skill-pack-evals.md](/Users/Gowtam/MyAgentSkills/workspace/codex/evals/skill-pack-evals.md).

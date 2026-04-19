@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Team"
+  short_description: "Coordinate Codex subagents for implementation"
+  default_prompt: "Use $dev-team to coordinate explicitly requested subagents or parallel workers against an existing architecture plan."
