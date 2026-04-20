@@ -1,4 +1,0 @@
-interface:
-  display_name: "Requirement Gathering"
-  short_description: "Interview to produce product requirements docs"
-  default_prompt: "Use $requirement-gathering to turn an idea into clear business and product requirements before architecture or implementation."

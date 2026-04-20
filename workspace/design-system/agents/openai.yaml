@@ -1,4 +1,0 @@
-interface:
-  display_name: "Design System"
-  short_description: "Write a concrete visual design system guide"
-  default_prompt: "Use $design-system to define the visual language, design tokens, and component patterns for a product UI."
