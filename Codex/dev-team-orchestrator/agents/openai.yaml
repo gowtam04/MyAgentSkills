@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dev Team Orchestrator"
+  short_description: "Run Claude /dev-team phase-by-phase with conditional commits"
+  default_prompt: "Use $dev-team-orchestrator to drive Claude Code via Computer Use, preferring Terminal.app when available and otherwise using the VS Code integrated terminal, run /dev-team phase-by-phase for <feature-or-project-path>, and require a phase commit only when the target is backed by a GitHub repo."
