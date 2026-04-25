@@ -83,7 +83,7 @@ If the feature includes an AI agent, check for an `agent-design/` directory at `
 - **`orchestration.md`** (multi-agent only) — coordination pattern. Implementers must follow it.
 - **`integration.md`** — invocation signature, error surface. Maps to an interface in the architecture's file structure.
 
-**When agent-design docs are present**, also ensure teammates building AI integration code are told to use the **`claude-api` skill** in their spawn prompt for SDK-level specifics (prompt caching config, tool-use loops, extended thinking, streaming) — agent-design specifies *what* the agent does, `claude-api` covers *how to implement it cleanly* against the Anthropic SDK. These are complementary.
+**When agent-design docs are present**, also ensure teammates building AI integration code are told to use the **`claude-api` skill** in their spawn prompt for SDK-level specifics (prompt caching config, tool-use loops, extended thinking, streaming) — agent-design specifies *what* the agent does, `claude-api` covers *how to implement it cleanly* against the Anthropic SDK. These are complementary. For the agent-build phase pattern and the eval/prompt-iteration protocol, use the **`agent-dev` skill in embedded mode** as guidance alongside `claude-api` — `agent-dev` covers agent-build lifecycle and quality gates, `claude-api` covers SDK mechanics.
 
 **If the architecture describes an AI feature but no `agent-design/` directory exists**, stop and tell the user. Recommend running the **`agent-design`** skill first — implementing a vague "the app has an AI assistant" spec without prompts, tool schemas, or output formats produces an agent that doesn't work. Don't improvise prompts or tools yourself.
 
@@ -142,6 +142,7 @@ Examples:
 - **mobile-dev**: Mobile app code (could split into ios-dev and android-dev if needed)
 - **data-layer-dev**: Database migrations, schemas, repositories, ORM models
 - **devops**: CI/CD, deployment configs, Docker, cloud infra
+- **agent-integration-dev**: The wrapper around an agent system — CLI, HTTP route, queue consumer, error surface, observability hooks. Use when the build has an AI phase and an `agent-design/` directory exists. For the agent internals (prompts, tool implementations, agent loop, eval harness, prompt iteration), use the `agent-dev` skill in embedded mode instead of reimplementing those patterns here.
 
 These are examples, not a fixed menu. Name roles based on what they actually do. The architecture's component breakdown should make the right roles obvious.
 
@@ -286,7 +287,7 @@ When you send a task to a teammate, always tell them:
 - Their role and what they're responsible for
 - Which architecture docs to read (give file paths in the feature's `architecture/` directory)
 - Which requirement docs to read if relevant (give file paths in the feature's `requirements/` directory)
-- **If agent-design docs exist** and the teammate is touching AI-integration code (tools, prompt wiring, model calls, eval harness): give them the paths to the relevant files in the feature's `agent-design/` directory. Tell them explicitly to treat `prompts.md`, `tools.md`, and `output-formats.md` as specification (copy the prompt text verbatim; implement tools to the stated schema) rather than starting points to rewrite. Also instruct them to **use the `claude-api` skill** when writing the Anthropic SDK calls.
+- **If agent-design docs exist** and the teammate is touching AI-integration code (tools, prompt wiring, model calls, eval harness): give them the paths to the relevant files in the feature's `agent-design/` directory. Tell them explicitly to treat `prompts.md`, `tools.md`, and `output-formats.md` as specification (copy the prompt text verbatim; implement tools to the stated schema) rather than starting points to rewrite. Also instruct them to **use the `claude-api` skill** when writing the Anthropic SDK calls. For the agent-specific phase pattern (tools → agent loop → eval harness → prompt iteration), the agent reviewer checklist, and the prompt iteration protocol, tell them to **use the `agent-dev` skill in embedded mode**. `claude-api` covers SDK-level specifics; `agent-dev` covers agent-build lifecycle and quality gates.
 - Which files to study for pattern reference (give file paths)
 - What files to create or modify
 - Clear success criteria
