@@ -1,4 +1,0 @@
-interface:
-  display_name: "Solution Architect"
-  short_description: "Design technical architecture from requirements"
-  default_prompt: "Use $solution-architect to turn requirements into a technical design, file plan, and implementation sequence."
