@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manual App Tester"
+  short_description: "Run and manually test local apps"
+  default_prompt: "Use $manual-app-tester to run this app locally. Ask me for the manual testing scope, discover all applicable surfaces, seed needed local data, test each surface with Computer Use, and write the QA report to docs/QA."
