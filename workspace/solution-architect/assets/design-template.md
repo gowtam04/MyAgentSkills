@@ -2,6 +2,7 @@
 
 ## Overview
 Mode: PM | Developer  ← pick one; this line is how `dev-team` detects the mode
+Budget Tier: hobby | startup | scaling | enterprise  ← from Phase 1; the deployment section must respect this
 Brief summary of what's being built and the key technical approach.
 
 ## Requirements Reference
@@ -43,6 +44,21 @@ Ordered, granular, build-order phases. For each phase:
 
 ## Technical Decisions
 Significant choices, alternatives considered, rationale, tradeoffs accepted.
+
+## Deployment & Infrastructure
+Restate the budget tier on the first line so the reader has it in context.
+
+For each concern, state the choice and a one-line "why this fits the tier":
+- **Hosting / runtime** — where the app runs (VM, PaaS, container platform, K8s, serverless)
+- **Database hosting** — managed tier vs self-hosted vs embedded
+- **Background jobs** (if any) — in-process / DB-backed / managed queue / event bus
+- **Object storage** (if any) — local / S3-equivalent / CDN-fronted
+- **Caching** (only if needed) — in-process / Redis / managed cache
+- **Observability** — stdout logs / logs-as-a-service / full APM
+- **Secrets** — env vars / platform secrets / dedicated secrets manager
+- **Environments** — just-prod / prod+staging / full dev/staging/prod
+
+End with a **rough monthly cost estimate** in the order-of-magnitude buckets ($0, $50, $500, $5k, $50k+). If the estimate doesn't match the budget tier, the design needs to be revisited.
 
 ## Code Conventions  *(Developer mode only — delete this section in PM mode)*
 Naming patterns, module boundaries, error-handling style + envelope shape,

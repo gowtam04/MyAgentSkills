@@ -105,23 +105,38 @@ Like requirements gathering, architecture is a structured dialogue. Don't dump a
 
 Start by summarizing what you understand from the requirements in plain text. Brief, not exhaustive — just enough to show you've read the docs and catch any misunderstandings.
 
-**Pick the mode first.** Your very first AskUserQuestion call in this phase must include the mode question. Batch it with the requirements-summary confirmation or any ambiguity questions — don't spend a round just on mode selection.
+**Pick the mode and budget tier first.** Your very first AskUserQuestion call in this phase must batch the mode question with a budget-tier question (and any ambiguity questions you also need answered). Both are foundational: mode controls how much code-level depth you'll go into, and budget controls every infra-touching recommendation downstream (database choice, hosting, queues, observability, third-party services). Don't spend a round on either one alone.
 
 ```
 AskUserQuestion({
-  questions: [{
-    question: "Who will be implementing this — and how much say do they want in code-level decisions?",
-    header: "Mode",
-    multiSelect: false,
-    options: [
-      { label: "PM mode (Recommended)", description: "Rapid prototype, high-level architecture. I'll infer sensible code-level defaults (naming, error handling, test framework, library picks). Good for solo work or an AI agent team." },
-      { label: "Developer mode", description: "Detailed blueprint for a human dev team. I'll surface every code-level decision — conventions, testing strategy, error handling, logging, package picks — so your team can weigh in. Expect more rounds." }
-    ]
-  }]
+  questions: [
+    {
+      question: "Who will be implementing this — and how much say do they want in code-level decisions?",
+      header: "Mode",
+      multiSelect: false,
+      options: [
+        { label: "PM mode (Recommended)", description: "Rapid prototype, high-level architecture. I'll infer sensible code-level defaults (naming, error handling, test framework, library picks). Good for solo work or an AI agent team." },
+        { label: "Developer mode", description: "Detailed blueprint for a human dev team. I'll surface every code-level decision — conventions, testing strategy, error handling, logging, package picks — so your team can weigh in. Expect more rounds." }
+      ]
+    },
+    {
+      question: "What's the budget posture for this build? This shapes infra, hosting, datastore, and managed-service choices downstream.",
+      header: "Budget",
+      multiSelect: false,
+      options: [
+        { label: "Hobby / prototype", description: "Free tiers and lean defaults — SQLite or hosted-free Postgres, single small VM or serverless free tier, no paid SaaS unless essential. Aim for $0–$50/mo." },
+        { label: "Startup / lean", description: "Pay for what's needed, prefer managed services on entry tiers, skip enterprise features. $50–$500/mo range — cost is a real constraint, but not the only one." },
+        { label: "Scaling / growth", description: "Production-grade managed services, redundancy where it matters, real observability stack. Cost-aware but not the primary constraint." },
+        { label: "Enterprise / no constraint", description: "Reliability, compliance, and scale come first. Choose best-fit services regardless of cost." }
+      ]
+    }
+  ]
 })
 ```
 
-Once the mode is chosen, state it in plain text (e.g., "Running in Developer mode — I'll surface code-level decisions as we go.") so the user knows what to expect, and put it on the `## Overview` line of the final doc.
+Once the answers come back, state both in plain text (e.g., "Running in Developer mode on a startup/lean budget — I'll surface code-level decisions as we go and right-size every infra recommendation to that tier.") so the user knows what to expect. Record the mode on the `## Overview` line of the final doc and the budget tier on a `Budget Tier:` line right below it.
+
+**The budget tier is a hard constraint on infra recommendations.** When you reach the Deployment & Infrastructure sub-section in Phase 3, every choice — hosting, datastore, queues, observability, secrets management, environments — must respect the tier the user picked. If the user said "hobby," don't reach for Kubernetes, managed Kafka, or Datadog and hope they'll upgrade — propose the cheapest option that meets the requirement (often a single small VM, a managed-DB free tier, in-process queues, and stdout logs), and only suggest stepping up when a requirement genuinely demands it. Same in reverse: if they said "enterprise," don't propose a $20 Heroku dyno just because it would work. The point of asking budget upfront is so you architect to fit, not so you ask and ignore.
 
 After the mode is set, identify any open questions or ambiguities that affect the architecture and present them via AskUserQuestion. Resolve these before moving to design. Focus on questions where the answer changes the architecture — don't ask about implementation details the builder can handle.
 
@@ -190,6 +205,42 @@ Tailor options to what actually fits the project. Include only options you'd gen
 
 Don't over-specify. You're choosing the foundation, not every npm package — leave room for builder discretion on implementation-level tooling. (In Developer mode that default flips for *architectural* packages — ORM, auth library, validation library, etc. See `references/developer-mode.md`.)
 
+### Phase 2.5: Scope call & Backend Topology
+
+Before you start designing components, make the **scope call** explicit. The architect's output diverges in two places based on this call: which template you use (`design-template.md` vs `large-app-docs/`) and whether you surface backend topology as a tradeoff decision. Naming it now — not at output time — keeps the conversation honest about the size of the thing being built.
+
+State the call in plain text, one of:
+- *"Treating this as a small/focused feature → I'll use the single-file `design.md` template, and pick a topology that fits the existing codebase or default to a simple monolith without spending a round on it."*
+- *"Treating this as a large/multi-phase application → I'll use the multi-file `large-app-docs/` structure, and surface backend topology as an explicit decision below."*
+
+Base the call on observable signals from the requirements: number of distinct subsystems or bounded contexts, expected scale, whether the work spans multiple major domains (e.g., catalog + payments + fulfillment + recommendations + notifications all in one ask), and whether the requirements imply independently-evolving parts. A new endpoint on an existing service is small. A new dashboard for an existing app is small. A multi-tenant marketplace, an internal platform with several distinct services, or a greenfield product spanning multiple domains is large. When in doubt, lean small — adding docs later is cheap, while overarchitecting at design time wastes everyone's time.
+
+**For small/focused scope**, skip the topology question. Default to the topology that fits the existing codebase, or to a plain monolith if greenfield. Move on to Phase 3.
+
+**For large/multi-phase scope**, present backend topology via AskUserQuestion. This is one of the most consequential decisions you'll surface — it shapes deployment, team workflow, operational complexity, and how the implementation phases get sliced. Don't silently default to a layered monolith because that's the most common template; the user picked "large" for a reason and deserves the tradeoff.
+
+State your own recommendation in plain text first (which topology you'd default to and *why*, given the requirements and the budget tier from Phase 1), then present the question:
+
+```
+AskUserQuestion({
+  questions: [{
+    question: "How should the backend be structured? This shapes deployment, team workflow, and operational complexity — and it's expensive to change later.",
+    header: "Topology",
+    multiSelect: false,
+    options: [
+      { label: "Monolith", description: "Single deployable, single database. Simplest to build, test, deploy, and operate. Strong fit when the domain is cohesive and one team owns it. Tradeoff: scaling and team-parallelism limits as the system grows." },
+      { label: "Modular monolith", description: "Single deployable, but internally split into well-bounded modules with explicit interfaces and (often) separate schemas. Keeps deployment simple while preserving the option to extract services later. Tradeoff: requires discipline to keep boundaries clean — easy to drift back into a tangled monolith." },
+      { label: "Microservices", description: "Multiple independently-deployed services, each owning its data. Enables team and scale independence, but pays for it in operational overhead — service discovery, distributed tracing, schema versioning, eventual consistency, deployment pipelines per service. Worth the cost only when teams or scale genuinely demand it." },
+      { label: "Serverless / function-per-endpoint", description: "Each endpoint or background job is a function (Lambda, Cloud Functions, Vercel/Netlify). Zero idle cost, scales automatically, but cold starts, vendor lock-in, harder local dev, and limits on long-running work. Strong fit for sporadic workloads and event-driven jobs; weaker for stateful or latency-critical paths." }
+    ]
+  }]
+})
+```
+
+**Tailor the options to what actually fits.** Don't pad with topologies that make no sense for the project — if the requirements demand stateful real-time collaboration, omit serverless or note in its description that it would force complex workarounds. If the team is one or two people, say so in the microservices description ("usually overkill at this team size"). The point of the options isn't to enumerate every possibility; it's to expose the realistic forks for *this* project with the tradeoffs that actually matter here.
+
+Once the user picks, state it in plain text and record it on the `Backend Topology:` line of the output doc (right under the `Budget Tier:` line for large-app docs). The topology choice then drives how you slice Phase 4's implementation phases — services get separate phase tracks, modular-monolith modules get their own slices but share scaffolding, etc.
+
 ### Phase 3: System Design
 
 This is the core of your work. Walk through:
@@ -228,6 +279,27 @@ For any external systems or services the application talks to:
 
 #### Cross-cutting patterns
 In PM mode you infer defaults for cross-cutting concerns (error-handling style, logging, transaction/concurrency boundaries, frontend state management, observability) and move on. In Developer mode every one of those becomes an explicit AskUserQuestion — see `references/developer-mode.md` for the list and how to batch it.
+
+#### Deployment & Infrastructure
+
+Translate the design into concrete infra recommendations — but only after re-reading the **budget tier** the user picked in Phase 1. The tier is a constraint, not a suggestion: every choice below must be the *right-sized* option for that tier, not the most capable option you could think of. If you find yourself recommending something that obviously busts the tier ("managed Kafka cluster" on a hobby tier, or "single $5 droplet" on enterprise), stop and pick again.
+
+Cover these concerns, in order. Skip any that don't apply to the work, but be explicit when you do — silence on "where does it run" is a gap, not a default.
+
+- **Hosting / runtime**: where the app actually runs. Single VM (Hetzner, DO, Linode), PaaS (Render, Fly.io, Railway, Heroku), container platform (ECS, Cloud Run, App Runner), Kubernetes, or serverless platform.
+- **Database hosting**: SQLite-on-disk, managed Postgres free tier (Neon, Supabase), managed Postgres paid tier (RDS, Cloud SQL, Aiven), self-hosted on the same VM, or a multi-AZ HA setup. Match the data-model needs and the budget tier.
+- **Background jobs / queues** (if needed): in-process (Sidekiq/BullMQ/Celery on the same node), `pg-boss` or DB-backed queue, managed Redis + worker, SQS / Cloud Tasks, or full event bus (Kafka, EventBridge). For low volume on a lean tier, an in-process worker is often the right answer.
+- **Object storage** (if needed): local disk, S3 / R2 / GCS standard tier, or CDN-fronted. Note the access pattern (write-once-read-many vs hot read path).
+- **Caching** (only if a requirement demands it): in-process LRU, Redis on the same node, managed Redis. Don't add caching as a "nice to have" — add it only when there's a measured need.
+- **Observability**: structured stdout logs (free, fine for hobby/startup), a logs-as-a-service tier (Logflare, Axiom, Better Stack at $0–$50/mo), or a full APM stack (Datadog, Honeycomb, New Relic). Default to the cheapest rung that meets the requirement; step up only when the requirement demands it.
+- **Secrets management**: env vars from the host on small tiers, the platform's built-in secret store (Render/Fly secrets, AWS Parameter Store) for managed setups, or a dedicated secrets manager (AWS Secrets Manager, HashiCorp Vault) when compliance or rotation requirements justify it.
+- **Environments**: just-prod is acceptable for hobby/prototype; prod + a separate dev/staging is the typical baseline for startup-and-up; full dev/staging/prod with PR-preview envs only when team size and process justify the cost.
+
+For AI/agent-heavy work, also see `references/agent-features.md` — it has a tiered ladder for vector store, queue, and observability that you should use directly rather than reinventing.
+
+Close the section with a **rough monthly cost estimate** (order-of-magnitude — $0, $50, $500, $5k, $50k+ buckets are enough). The point isn't accuracy to the dollar; it's so the user sees the bill they're signing up for before implementation starts. If the estimate doesn't match the tier they picked, the design is wrong — revisit.
+
+If the user picked "Enterprise / no constraint," you can recommend best-fit services and skip per-line cost justification — but still include the monthly estimate so the user isn't surprised. Cost-transparency is the rule across every tier; the tier just changes how aggressively cost shapes the choice.
 
 #### Key Technical Decisions
 
@@ -356,12 +428,13 @@ Copy the `assets/large-app-docs/` directory into the output location and fill in
 
 ```
 architecture/
-├── overview.md              — Vision, tech stack, high-level system diagram (include the `Mode:` line)
+├── overview.md              — Vision, tech stack, high-level system diagram, `Mode:` / `Budget Tier:` / `Backend Topology:` lines
 ├── data-model.md            — Complete data model with ERDs and field specs
 ├── api-design.md            — Full API contract (if extensive)
 ├── component-design.md      — Component breakdown, interfaces, dependencies
 ├── implementation-plan.md   — Phased build plan with file ownership
 ├── decisions.md             — Architecture Decision Records (ADRs)
+├── deployment.md            — Hosting, datastore, jobs, storage, observability, secrets, environments, cost estimate
 ├── conventions.md           — Developer mode only
 └── testing-strategy.md      — Developer mode only
 ```
