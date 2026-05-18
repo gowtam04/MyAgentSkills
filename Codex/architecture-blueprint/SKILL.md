@@ -1,13 +1,15 @@
 ---
 name: architecture-blueprint
 description: >
-  Create technical architecture and implementation blueprints from product requirements.
+  Create technical architecture documentation and implementation blueprints from product requirements.
   Use when the user has requirements, a PRD, product discovery docs, or a feature/app idea
   and asks "design the architecture", "how should we build this", "technical design",
-  "architect this", "implementation plan", "system design", or wants to move from
+  "architect this", "document the implementation plan", "system design", or wants to move from
   requirements toward coding. This skill decides data model, component boundaries, APIs,
   file ownership, deployment shape, technical tradeoffs, and build phases. It should run
-  before build-orchestrator for non-trivial apps or features.
+  before build-orchestrator for non-trivial apps or features. It writes architecture docs
+  only and does not implement application code. In Plan Mode, the proposed plan must be a
+  plan to create architecture docs only, never a plan to execute the build.
 ---
 
 # Architecture Blueprint
@@ -29,6 +31,26 @@ decisions.
   the multi-file architecture docs in `assets/large-app-docs/`.
 - Design for execution. Every file has an owner and purpose; every phase has dependencies,
   outputs, parallel opportunities, and a test focus.
+- Only `$build-orchestrator` may implement application code. This skill's deliverable is
+  architecture documentation only.
+
+## Plan Mode Output Contract
+
+When running in Plan Mode, the final `<proposed_plan>` must be a documentation plan, not an
+app implementation plan.
+
+- The proposed plan must describe only how Codex will create or update architecture docs.
+- The plan must explicitly state that no application source files, scaffolding, dependencies,
+  tests, build configs, migrations, or implementation artifacts will be created.
+- The plan can include architecture sections to document, decisions to resolve, templates to
+  use, and output path(s) for the docs.
+- The plan may include implementation phases as content inside the architecture docs, but it
+  must not execute those phases.
+- The plan must not include build actions such as creating components, API routes, services,
+  schemas, styles, tests, installing packages, or running a dev server.
+- When the user accepts the plan, write the architecture documentation only.
+- After the docs are written and approved, hand off to `$build-orchestrator`; do not start
+  implementation from this skill.
 
 ## Resources
 

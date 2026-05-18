@@ -4,10 +4,12 @@ description: >
   Conduct a structured product discovery interview and write business/product requirements
   documentation before design or implementation. Use when the user says "interview me",
   "gather requirements", "scope this app", "help me spec this out", "write a PRD",
-  "requirements doc", "plan this feature", or otherwise wants to define what should be
+  "requirements doc", "document this feature", or otherwise wants to define what should be
   built and why before deciding how to build it. This skill discovers personas, workflows,
   business rules, acceptance criteria, UX expectations, constraints, and open questions;
-  it does not make technical architecture decisions.
+  it does not make technical architecture decisions or implement application code. In Plan
+  Mode, the proposed plan must be a plan to create requirements docs only, never a plan to
+  build the app.
 ---
 
 # Product Discovery
@@ -30,6 +32,24 @@ requirements documentation that an architect can use without guessing.
   continue from the user's answers.
 - End each interview turn either with a structured user-input request or by writing/updating
   the requirements docs. Do not leave the user with an implied question hidden in prose.
+- Only `$build-orchestrator` may implement application code. This skill's deliverable is
+  requirements documentation only.
+
+## Plan Mode Output Contract
+
+When running in Plan Mode, the final `<proposed_plan>` must be a documentation plan, not an
+implementation plan.
+
+- The proposed plan must describe only how Codex will create or update requirements docs.
+- The plan must explicitly state that no application source files, scaffolding, dependencies,
+  tests, build configs, or implementation artifacts will be created.
+- The plan can include the requirement areas to document, open questions to capture, and the
+  output path(s) for the docs.
+- The plan must not include app build steps such as creating pages, components, API routes,
+  services, styles, tests, or running a dev server.
+- When the user accepts the plan, write the requirements documentation only.
+- After the docs are written and approved, hand off to `$architecture-blueprint`; do not start
+  architecture or implementation from this skill.
 
 ## Before Asking
 

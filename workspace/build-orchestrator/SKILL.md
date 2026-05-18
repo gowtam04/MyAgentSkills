@@ -30,6 +30,8 @@ and final judgment in the parent thread.
   must work with concurrent changes, and must keep changes inside their assigned scope.
 - Follow test-driven delivery when practical: tests first, red check, test review,
   implementation, implementation review, regression.
+- Any worker that builds or modifies frontend UI, visual design, styling, pages, layouts,
+  components, or interaction states must use `$frontend-design` for high-quality UI output.
 - Keep workers focused. Prefer short-lived workers that finish a phase slice, report changed
   files, and close.
 - Preserve user changes. If you encounter unrelated dirty work, leave it alone.
@@ -117,6 +119,20 @@ Specialized roles when useful:
 - **domain implementers**: backend-dev, frontend-dev, data-layer-dev, devops, mobile-dev, etc.,
   based on the architecture's file ownership map.
 
+Frontend/UI worker requirement:
+
+- Any `frontend-dev`, `mobile-dev`, full-stack worker touching UI, or worker assigned to pages,
+  layouts, visual components, styling, animation, interaction states, responsive behavior, or
+  design polish must be told to use `$frontend-design`.
+- Include the instruction directly in that worker's spawn prompt: "Use `$frontend-design` when
+  building or modifying frontend UI, components, layout, styling, animation, or interaction
+  states."
+- If the architecture or project includes a design system, brand guide, or existing UI
+  conventions, give the worker those paths too. `$frontend-design` improves execution quality;
+  it does not override explicit product, brand, accessibility, or architecture constraints.
+- Reviewers checking frontend work should verify that the result is not generic boilerplate and
+  that UI quality matches the intent of `$frontend-design`.
+
 Use Codex worker guidance:
 
 - Use `worker` agents for code changes.
@@ -171,6 +187,8 @@ Spawn implementer worker(s) only for unblocked, disjoint file scopes. Each promp
 - Test files to satisfy.
 - Existing code files to study for patterns.
 - Technical decisions and conventions that apply.
+- If the worker will touch frontend UI, components, layout, styling, animation, responsive
+  behavior, or interaction states, an explicit instruction to use `$frontend-design`.
 - Success criteria: tests pass for the assigned scope, type checks clean for touched code,
   architecture contracts honored.
 - "You are not alone in the codebase. Do not revert others' edits. Keep changes within your
@@ -257,12 +275,15 @@ Read:
 - {architecture docs}
 - {requirements docs}
 - {pattern/reference files}
+- {frontend design system or brand docs, if this is UI work}
 
 Own:
 - {files/directories this worker may edit}
 
 Task:
 - {concrete work}
+- If this task touches frontend UI, components, layout, styling, animation, responsive behavior,
+  or interaction states: use `$frontend-design` to produce distinctive, production-grade UI.
 
 Success criteria:
 - {tests/behavior/contracts}
