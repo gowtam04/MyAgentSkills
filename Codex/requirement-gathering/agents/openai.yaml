@@ -1,4 +1,0 @@
-interface:
-  display_name: "Requirement Gathering"
-  short_description: "Interview first, then write requirements docs"
-  default_prompt: "Use $requirement-gathering to interview me first, then write clear product requirements before architecture or implementation."
