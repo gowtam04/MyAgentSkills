@@ -1,4 +1,0 @@
-interface:
-  display_name: "Build Orchestrator"
-  short_description: "Coordinate Codex workers through TDD delivery"
-  default_prompt: "Use $build-orchestrator to coordinate Codex workers to implement this architecture."

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Product Discovery"
-  short_description: "Interview users into clear product requirements"
-  default_prompt: "Use $product-discovery to interview me and write requirements for this app."
