@@ -12,4 +12,4 @@ One entry per significant, hard-to-reverse decision.
 ## Unresolved from Requirements
 Open questions from the requirements docs that were resolved here, and any that still need
 the user's input. In Developer mode, also list code-level decisions marked
-"Proposed - confirm with dev team" when the architect ran solo.
+"Proposed — confirm with dev team" when the architect ran solo.

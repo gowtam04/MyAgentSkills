@@ -1,4 +1,0 @@
-interface:
-  display_name: "Architecture Blueprint"
-  short_description: "Turn requirements into implementation-ready design"
-  default_prompt: "Use $architecture-blueprint to design the technical blueprint from these requirements."
