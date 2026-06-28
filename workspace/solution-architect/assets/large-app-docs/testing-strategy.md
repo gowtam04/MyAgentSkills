@@ -2,7 +2,7 @@
 
 **Developer mode only** — delete this file if the architecture was produced in PM mode.
 
-- **Test framework** — runner and assertion library.
+- **Test framework** — runner and assertion library. (The exact run commands live in `deployment.md` → Build & Test Commands, mirrored in the Build Manifest.)
 - **Unit vs integration split** — what's covered at each level; per-phase split if it varies.
 - **Mocking policy** — what runs for real (DB, queue, external APIs?) and what's faked.
 - **Coverage target** — the bar, and what's exempt.

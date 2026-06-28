@@ -366,6 +366,8 @@ Define the key interfaces/contracts between components. These are the seams of t
 
 The test is: **would a builder plausibly get this wrong without guidance?** If yes, specify it. If a senior developer would do it the same way you would without being told, save the ink. (In Developer mode that default flips toward high detail — see `references/developer-mode.md`.)
 
+**If the consumer is an autonomous/agentic implementer** — one that can't ask you a clarifying question mid-build — bias toward high detail at the seams regardless of mode. The "save the ink" default assumes a builder who can ask; that assumption doesn't hold here, so apply the Developer-mode interface bar at the interfaces (full signatures, complete I/O types with field-level specs, error types). The test becomes "would a senior dev have an opinion about this?" (see `references/developer-mode.md`, Phase 4). A silent guess at a seam is the most expensive kind in an autonomous build. The driver is the consumer's inability to ask — not the mode label.
+
 These interfaces become the test-author's primary input (along with requirements) and the contract each implementer builds to.
 
 #### Implementation Phases
@@ -380,6 +382,7 @@ Each phase should state:
 - **What it produces** (what interfaces/files are available after this phase)
 - **Parallel opportunities** (what in this phase can be built simultaneously)
 - **Test focus** (what the tests for this phase verify)
+- **Requirement refs** (the requirement IDs — US-/AC-/BR- — this phase satisfies, so a builder and a reviewer can trace the phase back to the spec; if the requirements lack stable IDs, cite by section or quote and note the gap rather than fabricating refs)
 
 In Developer mode, each phase additionally carries **success criteria** (concrete, reviewable outcomes beyond "tests pass") and a **review checklist / test split** (unit vs integration, what's mocked vs real, review gates) — see `references/developer-mode.md`.
 
@@ -409,6 +412,46 @@ Phase 5: Integration & Edge Cases — E2E tests, cross-feature checks.     Depen
 
 The guiding question for granularity: **can each phase be meaningfully developed, tested, and reviewed as a standalone unit?** If a phase is too big to review confidently, split it. If two phases are so tightly coupled that testing one without the other is meaningless, merge them.
 
+**Call out integration checkpoints explicitly.** Beyond per-phase dependencies, name the seams where independently-built pieces first meet — e.g., "after the backend stack is built, before the frontend," or "after the frontend connects to the API" — and state what an end-to-end check at that seam should verify. These are the points where a builder needs an *integration* test rather than another unit test, and an autonomous builder can't infer them reliably. They also become the `integration_checkpoints` entries in the build manifest below.
+
+#### Build Manifest
+
+Alongside the human-readable plan above, emit a machine-readable manifest that makes the phase DAG, file ownership, and runnable commands explicit and parseable. It exists for a consumer that can't ask you back — an autonomous/agentic implementer reads it directly instead of inferring the plan from prose, where every inference is a chance to guess wrong.
+
+**The prose stays the source of truth; the manifest is a derived projection.** Ownership traces to the File Structure; the DAG and requirement refs trace to the Implementation Phases. **Generate it last**, after both are final, and make it consistent with them — if you can't fill a field without inventing something that isn't in the prose, the prose is incomplete: fix the prose first. On any prose↔manifest conflict, the prose wins.
+
+**Right-size it.** Required for large / multi-phase builds. For a small feature it's optional — a short manifest, or for a trivially small (single-phase) feature, inline the same fields (`owns`/`depends_on`/`requirement_refs`/`test_focus`) into the prose phase and skip the YAML block.
+
+**It's orthogonal to PM/Developer mode** — both modes emit it for multi-phase builds. In PM mode, *infer and fill* the `commands` block for the chosen stack rather than leaving the commands to the builder's reconnaissance; in Developer mode the commands are already pinned by `testing-strategy.md` / the deployment doc.
+
+Shape (YAML, in a fenced block):
+
+```yaml
+commands:                     # mirror of the Build & Test Commands recorded in deployment.md (keep identical)
+  test: "..."                 # full suite
+  test_one: "..."             # run a single test file/glob (placeholder ok if templated)
+  typecheck: "..."
+  build: "..."
+phases:
+  - id: p2
+    name: Data Model          # MUST match the prose phase name exactly
+    depends_on: [p1]          # MUST match the prose "Depends on"
+    owns:   ["src/models/**", "migrations/**"]   # globs from the File Structure; no two phases overlap
+    shared: ["src/db/index.ts"]                  # files touched by >1 phase — collision points for parallel builds
+    requirement_refs: [US-3, AC-3.1, BR-2]       # IDs this phase satisfies
+    test_focus: "entity validation, relationship constraints"
+    flags: [scaffold, ui, ai] # optional; presence signals scaffold / UI / AI-integration phases
+integration_checkpoints:
+  - after: [p5]               # phase ids that must complete first
+    name: backend-stack-e2e
+    verifies: "auth + core API end-to-end against a real DB"
+```
+
+Field rules:
+- `owns` is the ownership partition: every glob traces to a file listed in the File Structure, and no two phases' `owns` overlap. Any file genuinely touched by more than one phase goes in `shared` — never in two `owns`. `shared` is the collision map a parallel build uses to serialize or isolate those files.
+- `commands` mirrors the commands recorded in the deployment doc (the source of truth); keep them identical. If a command isn't known yet (greenfield, decided during scaffolding), write the intended command and mark it, e.g. `build: "TBD — set in scaffold phase"`.
+- `requirement_refs` cite IDs from the requirements docs. If the requirements lack IDs, flag the gap rather than fabricating refs.
+
 ## Output Documentation
 
 ### Where to write it
@@ -420,7 +463,7 @@ The guiding question for granularity: **can each phase be meaningfully developed
 
 #### For a smaller feature or focused scope
 
-Copy `assets/design-template.md` to `design.md` in the output directory and fill it in. It has: Overview (with the `Mode:` line), Requirements Reference, Tech Stack, Data Model, Component Design, API Design, File Structure, Interface Definitions, Implementation Phases, Technical Decisions, and Unresolved from Requirements. Omit sections that don't apply (e.g., no API Design for non-API work). In Developer mode, also fill in the `## Code Conventions` and `## Testing Strategy` sections the template marks as Developer-mode-only (see `references/developer-mode.md` for their contents); in PM mode, delete them.
+Copy `assets/design-template.md` to `design.md` in the output directory and fill it in. It has: Overview (with the `Mode:` line), Requirements Reference, Tech Stack, Data Model, Component Design, API Design, File Structure, Interface Definitions, Implementation Phases, Build Manifest, Technical Decisions, and Unresolved from Requirements. Omit sections that don't apply (e.g., no API Design for non-API work). The Build Manifest is mode-independent — emit it for any multi-phase design, and either omit it or inline its fields into the prose for a trivial single-phase feature. In Developer mode, also fill in the `## Code Conventions` and `## Testing Strategy` sections the template marks as Developer-mode-only (see `references/developer-mode.md` for their contents); in PM mode, delete them.
 
 #### For a large application or multi-phase project
 
@@ -432,7 +475,7 @@ architecture/
 ├── data-model.md            — Complete data model with ERDs and field specs
 ├── api-design.md            — Full API contract (if extensive)
 ├── component-design.md      — Component breakdown, interfaces, dependencies
-├── implementation-plan.md   — Phased build plan with file ownership
+├── implementation-plan.md   — Phased build plan with file ownership, integration checkpoints, and the Build Manifest (machine-readable appendix)
 ├── decisions.md             — Architecture Decision Records (ADRs)
 ├── deployment.md            — Hosting, datastore, jobs, storage, observability, secrets, environments, cost estimate
 ├── conventions.md           — Developer mode only
@@ -449,6 +492,8 @@ Your documentation should pass this test: **if a competent developer reads it, c
 - **Every technical decision is explained** with enough rationale that a builder won't second-guess it or accidentally contradict it.
 - **Phase ordering and dependencies are explicit** — a team lead can create a task board directly from your plan.
 - **Parallel opportunities are called out** — the team lead shouldn't have to figure out what can run simultaneously.
+- **Phases trace to requirements** — each phase cites the requirement IDs it satisfies, so a builder (human or autonomous) and a reviewer can verify the build serves the spec without re-reading every requirement.
+- **The build manifest is consistent with the prose** — for multi-phase builds, the manifest's `phases`/`owns`/`depends_on`/`requirement_refs` match the prose plan and File Structure exactly. It's a derived appendix, not a second source of truth.
 - In Developer mode, every code-level choice is stated explicitly (see `references/developer-mode.md`).
 
 Avoid vague architectural hand-waving. Not "the service layer handles business logic" but specifics scaled to complexity. For a complex auth service: "auth.service.ts exposes `authenticateUser(email, password): Promise<AuthResult>` and `refreshToken(token): Promise<TokenPair>`, handles password hashing with bcrypt, and issues JWTs with a 15-minute expiry and 7-day refresh window." For a standard CRUD service: "project.service.ts handles create, read, update, delete for projects with ownership-based permission checks — standard repository pattern."

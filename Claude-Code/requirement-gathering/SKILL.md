@@ -207,8 +207,17 @@ Brief description of what this feature does and why it exists.
 Who uses this and what are their goals.
 
 ## User Stories
-- As a [user type], I want to [action] so that [benefit].
-(Include acceptance criteria for each story)
+Give every story a stable ID (US-1, US-2, …) and every acceptance criterion its own stable ID
+(AC-1.1, AC-1.2 under US-1). These IDs are addressable downstream — the architect cites them per
+build phase, and a builder that can't ask you back mid-build (an autonomous/agentic implementer)
+verifies what it built against them. Keep an ID stable once assigned; append, don't renumber.
+
+- **US-1** — As a [user type], I want to [action] so that [benefit].
+  - **AC-1.1** — Given [context], when [action], then [observable result].
+  - **AC-1.2** — [a checkable assertion: a specific, verifiable outcome with concrete values — not "works well"]
+
+Make acceptance criteria objectively testable (Given/When/Then, or a concrete checkable
+assertion). A vague criterion becomes a silent guess for a builder that can't come back to ask.
 
 ## Functional Requirements
 ### [Area 1]
@@ -219,7 +228,8 @@ Detailed requirements grouped by functional area.
 
 ## Business Rules
 Validation rules, permission rules, status transitions, calculations —
-the logic that governs system behavior.
+the logic that governs system behavior. Give each rule a stable ID (BR-1, BR-2, …) so the
+architecture and tests can reference it.
 
 ## Non-Functional Requirements
 Performance expectations, reliability needs, accessibility, platform targets.
@@ -236,7 +246,10 @@ These are inputs for the architect — not decisions made here.
 Anything that still needs to be decided.
 
 ## Out of Scope
-What this feature explicitly does NOT include (prevents scope creep).
+What this feature explicitly does NOT include. Treat this as a hard boundary: a builder that can't
+ask you back — an autonomous/agentic implementer — will not cross it and will not invent
+functionality to fill a gap, so anything you leave out here that you actually want must move into
+scope above. Be explicit about adjacent things a builder might otherwise assume.
 ```
 
 #### For a Large Application or Multi-Phase Project
@@ -254,7 +267,7 @@ Organize requirements by **functional area**, not by product priority tiers (avo
 └── operational.md               — Non-functional requirements, constraints, compliance
 ```
 
-These are examples — name the files based on what the actual functional areas are for the project. A simpler project might only need 2-3 files; a complex one might need more. The point is to group requirements by the domain they belong to, so each area can be designed and built as a cohesive unit.
+These are examples — name the files based on what the actual functional areas are for the project. A simpler project might only need 2-3 files; a complex one might need more. The point is to group requirements by the domain they belong to, so each area can be designed and built as a cohesive unit. Carry the same stable-ID discipline (US-/AC-/BR-) inside each functional-area file so every story, criterion, and rule stays addressable across the doc set — namespace per area if it helps (e.g., `AUTH-US-1`, `BILLING-BR-2`).
 
 **How to decide on groupings:**
 - Group requirements that share the same entities, business rules, or user context
@@ -272,6 +285,7 @@ Your documentation should be:
 - **Organized by feature area, not by interview order.** Restructure the conversation into logical groupings.
 - **Free of technical decisions.** Describe what the system does, not how it's built. Say "the system sends a confirmation email when a user registers" not "the system uses SendGrid to send a confirmation email via SMTP."
 - **Honest about unknowns.** If something wasn't resolved in the interview, put it in the Open Questions section rather than making something up.
+- **Addressable and verifiable.** Every user story, acceptance criterion, and business rule carries a stable ID, and acceptance criteria are objectively testable. This is what lets a downstream builder trace what it built back to what you asked for — and verify it without asking you.
 
 ### After Writing
 

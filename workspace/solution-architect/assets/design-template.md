@@ -31,6 +31,8 @@ no two builders should need to edit the same file.
 Key contracts between components — function signatures, types, error types.
 Scale detail to complexity (high detail where a builder could plausibly get it wrong;
 light detail for conventional patterns). In Developer mode, default to high detail.
+If the consumer is an autonomous/agentic implementer that can't ask back, bias to high detail at
+the seams regardless of mode — a silent guess at a seam is the most expensive kind.
 
 ## Implementation Phases
 Ordered, granular, build-order phases. For each phase:
@@ -39,14 +41,43 @@ Ordered, granular, build-order phases. For each phase:
 - What it produces (interfaces/files available after)
 - Parallel opportunities (what can be built simultaneously)
 - Test focus (what the phase's tests verify)
+- Requirement refs — the requirement IDs (US-/AC-/BR-) this phase satisfies
 - (Developer mode) Success criteria — concrete reviewable outcomes beyond "tests pass"
 - (Developer mode) Review checklist / test split — unit vs integration, mocked vs real, review gates
+
+## Build Manifest  *(machine-readable appendix — required for multi-phase builds, optional/inline for a trivial single-phase feature)*
+A derived projection of the File Structure (ownership) and Implementation Phases (DAG, refs); the
+prose above stays the source of truth. It exists for an autonomous/agentic consumer that reads the
+plan without asking back. Generate it last and keep it consistent with the prose. The `commands`
+block mirrors the commands recorded in the Deployment section below — keep the two identical.
+
+```yaml
+commands: { test: "...", test_one: "...", typecheck: "...", build: "..." }
+phases:
+  - id: p1
+    name: ...               # MUST match the prose phase name
+    depends_on: []          # MUST match the prose "depends on"
+    owns:   ["..."]         # globs from the File Structure; no two phases overlap
+    shared: ["..."]         # files touched by >1 phase — collision points
+    requirement_refs: [US-1, AC-1.1]
+    test_focus: "..."
+    flags: []               # optional: scaffold | ui | ai
+integration_checkpoints:
+  - { after: [...], name: ..., verifies: "..." }
+```
+
+For a trivial single-phase feature, inline `owns`/`depends_on`/`requirement_refs` into the prose
+phase and omit this block.
 
 ## Technical Decisions
 Significant choices, alternatives considered, rationale, tradeoffs accepted.
 
 ## Deployment & Infrastructure
 Restate the budget tier on the first line so the reader has it in context.
+
+Record the exact runnable commands here — `test`, `test_one` (single file/glob), `typecheck`,
+`build` (and `lint` if relevant) — so they're available to builders and to the Build Manifest above.
+This is the source of truth; keep the manifest's `commands` block identical.
 
 For each concern, state the choice and a one-line "why this fits the tier":
 - **Hosting / runtime** — where the app runs (VM, PaaS, container platform, K8s, serverless)

@@ -21,7 +21,7 @@ A diagram or description of the major pieces and how they connect. For non-monol
 - `data-model.md` — entities, relationships, ERD
 - `component-design.md` — component breakdown, interfaces, dependencies
 - `api-design.md` — endpoints, request/response shapes, auth, errors
-- `implementation-plan.md` — phased build plan with file ownership
+- `implementation-plan.md` — phased build plan with file ownership, integration checkpoints, and the Build Manifest (machine-readable appendix for autonomous builders)
 - `decisions.md` — Architecture Decision Records (ADRs)
 - `deployment.md` — hosting, datastore, jobs, storage, observability, secrets, environments, cost estimate
 - `conventions.md` — *(Developer mode only)* naming, error handling, logging, transactions

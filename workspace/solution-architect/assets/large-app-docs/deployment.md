@@ -42,6 +42,17 @@ Where the app(s) actually run. For microservices or hybrid topologies, list each
 - Set: {just-prod | prod + dev/staging | dev + staging + prod + PR previews}
 - Promotion / deploy flow
 
+## Build & Test Commands
+The exact runnable commands an implementer (human or autonomous) uses. This is the source of truth;
+the Build Manifest in `implementation-plan.md` mirrors these — keep them identical. If a command
+isn't known yet (greenfield, decided during scaffolding), write the intended command and mark it TBD.
+
+- Test (full suite): `...`
+- Test one (single file/glob): `...`
+- Typecheck: `...`
+- Build: `...`
+- Lint / format *(if relevant)*: `...`
+
 ## CI / CD *(if relevant)*
 - Pipeline shape, where it runs, what gates exist before prod
 
