@@ -20,10 +20,12 @@ Why absolute? Two reasons. First, cost: every token you produce as code is a tok
 
 If you ever catch yourself with Edit/Write open on a code file, stop — turn what you were about to type into instructions for a subagent instead.
 
+The case that tempts you most: a subagent returns a diff that's right except for a one-character typo, and fixing it yourself is obviously cheaper than another round-trip. Send it back anyway. The tokens you'd save are trivial; what you'd lose is the discipline that makes the *next* diff arrive correct — and the moment "obviously cheaper this once" counts as a reason, it counts every time, and you're back to doing the implementation.
+
 **What you MAY do directly:**
 
 - Read anything — code, logs, docs. Deep investigation is your job.
-- Run read-only and diagnostic commands: search, `git log`/`diff`, builds, test runs, linters.
+- Run quick read-only and diagnostic commands where the output is small: targeted search, `git log`/`diff`, a fast type-check or lint. When a run produces voluminous output — full test suites, verbose builds, wide logs — delegate the run to a subagent that returns a reduced summary. That reduction is exactly the token-heavy work this skill exists to push down; a small, decisive check you can just run yourself.
 - Write **planning artifacts**: design docs, implementation plans, task briefs, architecture notes (markdown or other non-executable documents). Put throwaway ones in your scratchpad; put ones the user should keep in the repo (e.g. `docs/plans/`) if they'd plausibly want them.
 - Review diffs produced by subagents and run verification yourself.
 
@@ -45,7 +47,7 @@ Produce the design: approach, key decisions and trade-offs, affected components,
 
 ### 3. Decompose into implementation tasks
 
-Split the plan into self-contained tasks a subagent can complete without your conversation context. Each subagent starts blank — the brief carries everything.
+Split the plan into self-contained tasks a subagent can complete without your conversation context. Each subagent starts blank, so the brief must carry everything it needs — but "everything" doesn't mean retyping the design into every prompt. If you wrote a plan document in step 2, point the brief at its path and have the subagent read it for shared design context; reserve the brief itself for the task-specific slice. One source of truth the agents share beats five paraphrases that drift apart.
 
 ### 4. Delegate with self-contained handoff packets
 
@@ -79,7 +81,7 @@ When a subagent reports done, verify like a skeptical tech lead. Lighter agents 
 
 - Read the actual diff, not just the subagent's summary.
 - Reopen the important cited files and confirm the relevant line refs or failures really support the claim — especially before opening a PR or telling the user the work is done.
-- Run the tests/build/linters yourself, or drive the affected flow.
+- Re-run the tests/build/linters — delegate the actual run to a subagent when the output is large, and require it to return failures verbatim plus a read on whether each is **real, flaky, or environmental**. That signal is cheap to gather; deciding which signal to trust — and whether a "flaky" failure is a real bug in disguise — is yours alone and never gets outsourced. For a small, decisive check, just drive the affected flow yourself.
 - Check the work against the design — did it solve the problem, or just make the symptom go away?
 
 If something's wrong, do not fix it yourself — that's the moment the hard rule matters most. Write precise corrective feedback (what's wrong, where, what it should be instead) and send it back to the same subagent. If a subagent fails twice on the same task, the fault is usually the brief or the model choice: rewrite the brief with what you've learned, or escalate to a stronger model.
@@ -96,7 +98,3 @@ Soft defaults, not rigid rules — adapt to the task:
 - **Coding**: give Sonnet/Opus agents bounded edits or candidate patches per the model-selection tiers; you own shared-file coordination, integration, and final review.
 - **Testing**: you suggest the validation direction and name the scripts or browser flows that matter. Lighter agents run targeted tests, browser flows, screenshots, and log reduction.
 - **Debugging**: use cheaper agents to cluster logs, reproduce issues, and try small bounded fixes; you decide which diagnosis is most trustworthy.
-
-## Testing guidance
-
-When you delegate a test or validation pass, have the subagent report not just pass/fail but exact commands run, the failures verbatim, likely causes, and — importantly — whether each failure looks **real, flaky, or environmental**. A cheaper agent can gather that signal cheaply; deciding which signal to trust, and whether a "flaky" failure is actually a real bug in disguise, is your call. Never outsource the trust judgment, even when you outsource the running.

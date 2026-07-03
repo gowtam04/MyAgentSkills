@@ -1,9 +1,8 @@
 # Delegation briefs
 
-Copy-and-fill templates for the subagents Fable spawns. The governing idea
-(from `efficient-fable`): the cheap models do the token-heavy reading; Fable
-keeps the judgment — slicing, resolving conflicts, verifying, and writing the
-report.
+Copy-and-fill templates for the subagents Fable spawns. The governing idea: the
+cheap models do the token-heavy reading; Fable keeps the judgment — slicing,
+resolving conflicts, verifying, and writing the report.
 
 Each subagent starts with **no memory of this conversation**. The brief carries
 everything: scope, the rubric, the output contract, and the stop conditions. A
@@ -11,41 +10,62 @@ vague brief produces vague findings you then have to re-derive — which defeats
 the delegation.
 
 Model choice, by default:
-- **Review agents** (per-module + cross-cutting): **Sonnet**. Scanning a bounded
-  set of files against a checklist is well-specified work.
+- **Area review agents:** **Sonnet**. Reviewing a bounded area against a rubric
+  is well-specified work.
 - **Verification agents:** **Sonnet** for most; escalate a specific finding to
   **Opus** when confirming it needs real reasoning (subtle concurrency, a
   cross-file exploit chain) rather than just rereading the cited lines.
 - Never spawn implementation/fix agents from this skill — it's read-only.
 
-Always return findings as **structured JSON** so Fable can merge slices without
-parsing prose. Schema at the bottom.
+Always return findings as **structured JSON** so Fable can merge and route them
+without parsing prose. Schema at the bottom.
+
+One review agent per **review area** (the areas Fable derived in step 2). An area
+is one of two shapes; pick the brief flavor that matches:
+
+- **Module-shaped** — the area is a bounded set of files (a service, the data
+  layer, the web/BFF). Scope it by paths.
+- **Concern-shaped** — the area is a thread that runs across the repo (tenant
+  isolation, authn/authz, secrets, HIPAA/PHI handling, the AI layer, migrations,
+  observability, dependencies, consistency). Scope it by *what to trace*, with
+  the recon leads (entry points, manifests, hotspots) as starting points.
+
+Both use the same rubric, the same JSON contract, and the same read-only stance —
+only the "what's in scope" line differs. Fill Brief A with the flavor that fits.
 
 ---
 
-## Brief A — per-module review agent
+## Brief A — area review agent
 
-Spawn one per slice from the recon module map. Keep each slice to a coherent set
-of files a single agent can hold and reason about (roughly a few thousand LOC;
-split larger modules).
+Spawn one per area. Keep each area to what a single agent can hold and reason
+about (roughly a few thousand LOC of relevant code); if a real area is bigger,
+give it several agents and merge their findings into the one area file.
 
 ```
-You are a code auditor. Review ONLY the code in scope below and report defects.
-This is a READ-ONLY audit — do not edit, run, or fix anything. Read and analyze.
+You are a code auditor reviewing ONE area of a larger codebase, and reporting
+defects. This is a READ-ONLY audit — do not edit, run, or fix anything. Read
+and analyze.
 
 Repo: <abs path>
-Scope (review these, and follow calls into them): <dir/files, e.g. src/auth/**>
-Out of scope: everything else (other agents cover it) — note cross-boundary
-  issues briefly but don't chase them.
+Area: <the area name, e.g. "Tenant isolation & RLS" or "AI layer">
+Scope — review these and follow calls into them:
+  <for a module-shaped area: the paths, e.g. src/db/**, src/tenancy/**>
+  <for a concern-shaped area: what to trace, e.g. "every DB query path — confirm
+   each is scoped to the caller's tenant; start from src/db/query.ts and the
+   models in src/models/**". Include the recon leads.>
+Out of scope: everything else (other agents own it) — note a cross-area issue
+  briefly if you spot one, but don't chase it.
 
 Review across all four dimensions using this rubric verbatim:
 <paste the four dimension sections + the severity rubric + "what makes a finding
  worth reporting" from references/dimensions.md>
 
 Method:
-- Trace untrusted input from entry points to sinks within scope.
+- Trace untrusted input from entry points to sinks within your area.
 - For each risky spot, ask: what input/state makes this misbehave, and how?
 - Prefer a few well-evidenced, located findings over a long shallow list.
+- Group repeated instances of one root cause into a single finding listing all
+  locations.
 - Every finding needs file:line, a concrete failure scenario, evidence (quote
   the lines), a recommended direction, and an honest confidence.
 
@@ -56,40 +76,7 @@ note that you did).
 Return ONLY JSON matching this schema: <paste schema>. No prose outside the JSON.
 ```
 
-## Brief B — cross-cutting review agents
-
-Some risks don't live in one module. Spawn a small set of these to cover what
-per-module slicing misses. Same output contract as Brief A, but scope is a
-concern spanning the whole repo:
-
-- **Security data-flow & secrets** — trace auth/authz and untrusted input across
-  module boundaries; scan for committed secrets and unsafe config (use the recon
-  "secret-ish files" and manifest lists as leads).
-- **Dependency & supply chain** — read the manifests/lockfiles recon found;
-  flag known-vulnerable, unmaintained, or suspiciously-named packages and
-  lockfile/version drift.
-- **Architecture & coupling** — build the module dependency picture; find
-  circular deps, layering violations, god files, and churn×complexity hotspots.
-- **Consistency sweep** — find concerns implemented N different ways (auth,
-  error handling, validation, logging, config) across the codebase.
-
-```
-You are auditing ONE cross-cutting concern across an entire repository.
-READ-ONLY — analyze, don't modify.
-
-Repo: <abs path>
-Concern: <e.g. "authentication & authorization data flow">
-Leads from recon: <paste relevant recon lines — manifests, hotspots, entry pts>
-
-<paste the relevant dimension section(s) + severity rubric + finding bar>
-
-Cast wide but report only located, evidenced findings. Group repeated instances
-of one root cause into a single finding listing all locations.
-
-Return ONLY JSON matching this schema: <schema>.
-```
-
-## Brief C — adversarial verification agent
+## Brief B — adversarial verification agent
 
 Runs after review, before anything lands in the report. Its job is to **refute**,
 not to agree — this is what keeps false positives out. Batch a handful of related
@@ -147,5 +134,7 @@ Every review agent returns:
 }
 ```
 
-Ids are provisional out of the review agents; Fable renumbers per dimension
-(`SEC-01`, `COR-01`, ...) during synthesis after dedup and verification.
+Ids are provisional out of the review agents. During synthesis — after dedup,
+routing, and verification — Fable assigns each finding to its home area file and
+gives it a stable id there (`SEC-01`, `RLS-01`, …) that the index and other files
+can link to.

@@ -29,6 +29,26 @@ find_src() {
   find . \( $PRUNE \) -prune -o "$@"
 }
 
+# Like find_src, but also skips binary/asset files by extension. Used for the
+# LOC and largest-file passes: running `wc -l` over images/fonts/archives is
+# wasteful and a single large vendored binary otherwise dominates the "largest
+# files" list and pollutes the language counts. Globs are quoted so the shell
+# never expands them against the cwd.
+find_code() {
+  # shellcheck disable=SC2086
+  find . \( $PRUNE \) -prune -o \
+    ! \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' \
+      -o -iname '*.ico' -o -iname '*.webp' -o -iname '*.bmp' -o -iname '*.tiff' \
+      -o -iname '*.pdf' -o -iname '*.zip' -o -iname '*.gz' -o -iname '*.tar' \
+      -o -iname '*.tgz' -o -iname '*.bz2' -o -iname '*.7z' -o -iname '*.rar' \
+      -o -iname '*.jar' -o -iname '*.war' -o -iname '*.class' -o -iname '*.wasm' \
+      -o -iname '*.woff' -o -iname '*.woff2' -o -iname '*.ttf' -o -iname '*.otf' \
+      -o -iname '*.eot' -o -iname '*.mp4' -o -iname '*.mov' -o -iname '*.avi' \
+      -o -iname '*.mp3' -o -iname '*.wav' -o -iname '*.ogg' -o -iname '*.so' \
+      -o -iname '*.dylib' -o -iname '*.dll' -o -iname '*.exe' -o -iname '*.bin' \
+      -o -iname '*.o' -o -iname '*.a' -o -iname '*.pyc' \) "$@"
+}
+
 line() { printf '%s\n' "----------------------------------------------------------------------"; }
 
 # Filter out non-source noise from ranked lists (OS cruft, lockfiles, licenses).
@@ -64,7 +84,7 @@ echo "source files (excl. vendored/generated): $TOTAL_FILES"
 # ---- languages by lines of code -------------------------------------------
 line
 echo "LANGUAGES (by lines of code, top 15)"
-find_src -type f -print0 2>/dev/null \
+find_code -type f -print0 2>/dev/null \
   | xargs -0 wc -l 2>/dev/null \
   | awk '
     $2 == "total" { next }
@@ -125,7 +145,7 @@ find_src -type f \( -name '.env*' -o -name '*.pem' -o -name '*.key' -o -name '*.
 # ---- largest source files (complexity / god-object smell) ------------------
 line
 echo "LARGEST SOURCE FILES (top 15 — complexity hotspots)"
-find_src -type f -print0 2>/dev/null \
+find_code -type f -print0 2>/dev/null \
   | xargs -0 wc -l 2>/dev/null \
   | awk '$2 != "total"' | grep -Ev "$NOISE" | sort -rn | head -15 \
   | awk '{printf "  %8d loc  %s\n", $1, $2}'
