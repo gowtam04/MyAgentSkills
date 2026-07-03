@@ -1,0 +1,46 @@
+{
+  "skill_name": "fable-codebase-audit",
+  "notes": "Proposed test cases for the skill-creator eval loop. Run each with a Fable-powered agent WITH the skill vs. a Fable baseline WITHOUT it. Each needs a target repo — ideally one with a few known/planted issues so we can measure catch-rate. Assertions are drafts; refine after the user signs off on prompts and picks target repos.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Do a thorough audit of this codebase — security, correctness, architecture, and code quality. I want a report I can hand to my team.",
+      "expected_output": "A CODEBASE_AUDIT.md at repo root following the template: exec summary + findings-at-a-glance table, prioritized top risks, system-level architecture assessment, severity-ranked findings with file:line + recommendations, and an out-of-scope/method appendix. Fan-out + verification actually happened.",
+      "files": [],
+      "assertions": [
+        "Produces CODEBASE_AUDIT.md (or user-named path) at the repo root",
+        "Report contains all required sections: executive summary, findings-at-a-glance table, top risks, system-level assessment, findings by dimension, appendix",
+        "Every reported finding cites a concrete file:line location",
+        "Findings use only the rubric severity labels (Critical/High/Medium/Low/Info)",
+        "No source files under audit were modified (git diff shows only the report added)",
+        "The run spawned parallel review subagents and a separate verification pass",
+        "Covers all four dimensions (security, correctness, architecture, maintainability)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We're acquiring this company and I need a due-diligence review of their backend before we sign. Focus me on the real risks — I don't want an 80-item nitpick list, I want to know what would actually hurt us.",
+      "expected_output": "A report that leads hard with impact: a short prioritized top-risks section and system-level tech-debt/architecture read, serious findings verified, low-value nitpicks suppressed or grouped. Blind spots (what couldn't be reached) stated honestly.",
+      "files": [],
+      "assertions": [
+        "Top-risks section is present and prioritized by impact, not volume",
+        "Critical/High findings are marked as verified",
+        "Report does not bury serious findings under a long list of Low/Info items",
+        "Out-of-scope / not-reviewed section honestly states coverage gaps",
+        "System-level assessment discusses tech-debt hotspots (churn x complexity)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Just started at this job and inherited this repo. Can you review the whole thing and tell me where the bodies are buried, what's fragile, and what I should be scared to touch?",
+      "expected_output": "An onboarding-oriented audit emphasizing the architecture/maintainability read and tech-debt hotspots, while still surfacing security and correctness landmines. Clear, file-linked, honestly scoped.",
+      "files": [],
+      "assertions": [
+        "Report identifies fragile / high-churn / high-complexity hotspots explicitly",
+        "System-level assessment explains how the codebase is structured and where seams have eroded",
+        "Security and correctness findings still surfaced, not dropped in favor of only architecture",
+        "Findings link to file:line so a new engineer can navigate to them"
+      ]
+    }
+  ]
+}
