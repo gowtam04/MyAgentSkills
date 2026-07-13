@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architecture Blueprint"
+  short_description: "Requirements → design docs + phased ownership blueprint (plan mode aware)"
+  default_prompt: "Use /architecture-blueprint to design the technical blueprint from these requirements."
