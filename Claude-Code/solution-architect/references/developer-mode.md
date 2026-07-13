@@ -61,10 +61,6 @@ Skip items that don't apply (no frontend → no state management; no APIs → no
 
 When you wrap up, tell the user the output includes these extra pieces and that `dev-team` uses them to spawn better implementer/reviewer prompts.
 
-## Developer-mode thin pass (after `agent-design`)
-
-Mode still applies on the "thin pass" described in `agent-features.md`. A Developer-mode thin pass additionally produces `## Code Conventions` / `## Testing Strategy` (or `conventions.md` + `testing-strategy.md`) scoped to the agent's build — conventions for the tool implementations and the agent loop, testing strategy for the eval harness and integration tests. A PM-mode thin pass keeps the standard scope.
-
 ## Mid-conversation mode switch
 
 The user can upgrade PM→Developer at any point ("actually, let me loop in my devs — can you go deeper?"). When this happens: fire a follow-up AskUserQuestion batch to capture the code-level decisions PM mode skipped (conventions, testing, error handling, logging, any package-level picks you'd inferred), then append `## Code Conventions` and `## Testing Strategy` to the already-written docs (or add `conventions.md` + `testing-strategy.md` for a large app) and update the `Mode:` line on the Overview to `Developer`.

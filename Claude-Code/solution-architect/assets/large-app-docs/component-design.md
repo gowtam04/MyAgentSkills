@@ -14,5 +14,5 @@ each file has one purpose; no two builders should need to edit the same file.
 ## Interface Definitions
 Key contracts between components — function signatures, types, error types.
 Scale detail to complexity; in Developer mode default to high detail.
-(If the agent-features scenario applies, leave agent internals to `agent-design/` and
-just specify the agent component's interface here.)
+(If there is an AI/agent component, include its interface here and enough prompt/tool/output
+detail for implementers — see `references/agent-features.md`.)

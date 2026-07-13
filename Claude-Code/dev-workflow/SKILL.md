@@ -68,8 +68,6 @@ full detail on where to look and what each input gives you. In short:
   appendix), consume it directly — it maps almost 1:1 onto the workflow's `args`; when it's absent,
   infer the plan from the prose. See `references/blueprint-and-roles.md` for both paths.
 - **Requirements docs** (secondary) — the "why": acceptance criteria and business rules.
-- **`agent-design/`** (auto-detect) — if the feature includes an AI agent, these specs (prompts,
-  tools, output formats, model, evals) are co-equal with the architecture for AI-integration work.
 - **Design system** (auto-detect) — if present, every UI agent honors it.
 
 If architecture docs are **missing**, tell the user and recommend running `solution-architect`
@@ -146,11 +144,8 @@ verification), scaffolding/config generation, and the documentation pass. Reason
 on the strong model; execution-heavy work gets the cheap one.
 
 **Specialized skills inside agents.** Agents are full subagents and can use skills. In the relevant
-agent prompts, instruct them to:
-- use the **`frontend-design`** skill for any UI work (and honor the design-system doc if one
-  exists);
-- use the **`claude-api`** skill for Anthropic SDK code, and **`agent-dev`** (embedded mode) for the
-  agent-build lifecycle, whenever `agent-design/` docs are present and the agent touches AI code.
+agent prompts, instruct them to use the **`frontend-design`** skill for any UI work (and honor the
+design-system doc if one exists).
 
 The full, copy-adaptable script template — schemas, the `buildPhase` function, the adversarial
 review with refutation voting, the wave loop, regression, and final verification — lives in
@@ -196,7 +191,7 @@ If the chosen scope was a single phase, offer the next phase as the next run.
 
 - `references/blueprint-and-roles.md` — where to find each design doc and what it provides; the
   roles each agent plays (test-author, reviewers, runners, implementers, integration-tester, docs);
-  the progress-file template; auto-detect rules for `agent-design/` and design systems.
+  the progress-file template; auto-detect rules for design systems.
 - `references/workflow-authoring.md` — the full JavaScript workflow template: schemas, `buildPhase`
   TDD cycle with bounded fix loop, adversarial review with refutation voting, dependency-wave loop,
   between-wave regression, integration/docs/final-verification phases, model routing, and worktree

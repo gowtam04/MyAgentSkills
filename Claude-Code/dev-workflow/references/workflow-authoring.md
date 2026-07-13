@@ -89,7 +89,7 @@ const HAIKU = 'haiku'   // cheap model for mechanical stages
 // manifest integration_checkpoints.
 // args.waves: ordered array of waves; each wave is an array of phase objects:
 //   { name, requirementDocs[], requirementRefs[], archDocs[], interfaceDocs[], testPatternRefs[],
-//     implFiles[], patternRefs[], ui:bool, ai:bool, agentDesignDocs[], designSystem }
+//     implFiles[], patternRefs[], ui:bool, ai:bool, designSystem }
 // args.commands: { test, testOne(fileGlobs), typecheck, build }
 // args.needsScaffold: bool ; args.scaffold: {prompt}
 // args.integration: [{name, prompt}] ; args.docs: {prompt} ; args.designSystem: path|null
@@ -133,11 +133,10 @@ async function buildPhase(ph) {
 
   // 4. implement + run + review, bounded fix loop
   const ui = ph.ui ? `Use the frontend-design skill.${ph.designSystem ? ` Honor the design system at ${ph.designSystem}.` : ''}` : ''
-  const ai = ph.ai ? `Use the claude-api skill for SDK code and agent-dev (embedded) for the agent-build lifecycle. Treat ${ph.agentDesignDocs?.join(', ')} as specification — paste prompts verbatim, implement tools to schema.` : ''
   let last = await agent(
     `Implement phase "${ph.name}" so its tests pass. You OWN these files only: ${ph.implFiles.join(', ')} — do not edit anything else.
      Read: architecture ${ph.archDocs?.join(', ')}; the tests ${tests.files.join(', ')}; pattern references ${ph.patternRefs?.join(', ')}.
-     ${ui} ${ai}
+     ${ui}
      Success: the phase tests pass, types check, the build succeeds.`,
     { label: `impl:${ph.name}`, phase: 'Build' })
 

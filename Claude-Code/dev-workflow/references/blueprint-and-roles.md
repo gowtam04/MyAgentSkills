@@ -5,7 +5,7 @@ design doc lives, what role each agent plays in the workflow, and the progress-f
 
 ## Contents
 - [Where to find the design docs](#where-to-find-the-design-docs)
-- [Auto-detect: agent-design and design systems](#auto-detect-agent-design-and-design-systems)
+- [Auto-detect: design systems](#auto-detect-design-systems)
 - [The agent roles a workflow plays](#the-agent-roles-a-workflow-plays)
 - [Progress-file template](#progress-file-template)
 
@@ -67,27 +67,7 @@ them, pass the specific IDs a phase satisfies to that phase's test-author (to as
 its reviewers (the spec/acceptance-criteria lens) — this sharpens the "does it satisfy the spec?"
 gate from "read all the requirements" to "verify these exact criteria."
 
-## Auto-detect: agent-design and design systems
-
-### `agent-design/` (for AI/LLM features)
-Look in `/docs/features/{feature-name}/agent-design/`, `/docs/agent-design/`, or `./agent-design/`.
-**If present, treat it as co-equal with the architecture** for any agent implementing the AI feature
-or its integration code:
-- `prompts.md` — system prompts + few-shot examples. Implementer pastes these **verbatim**; they are
-  not starting points to rewrite.
-- `tools.md` — tool schemas. Implement to the stated schema; test-writers assert against these.
-- `output-formats.md` — structured output schemas. Implementations must conform.
-- `data-sources.md`, `agents.md` (model choice/runtime/caching), `evaluation.md` (golden cases →
-  seed the eval suite), `orchestration.md` (multi-agent coordination), `integration.md` (invocation
-  signature, error surface).
-
-When `agent-design/` is present, AI-integration agents should be told to **use the `claude-api`
-skill** for SDK mechanics (caching config, tool-use loops, streaming) and **`agent-dev` in embedded
-mode** for the agent-build lifecycle and eval/prompt-iteration protocol. agent-design says *what*;
-those skills cover *how to implement it cleanly*.
-
-If the architecture describes an AI feature but **no `agent-design/` exists**, stop and recommend
-running `agent-design` first. Don't improvise prompts, tools, or model choices.
+## Auto-detect: design systems
 
 ### Design system (for UI work)
 Look for `/docs/design-system/design-system.md` (or wherever the architecture points). If present,
@@ -115,10 +95,9 @@ functions/stages in the script.
   point is to keep noisy output out of the reasoning agents.
 
 **Implementation roles (vary by project — name them from the architecture's components):**
-backend-dev, frontend-dev, mobile-dev, data-layer-dev, devops, agent-integration-dev, etc. Each owns
-a non-overlapping slice of the file structure. Any UI role is told to use the **`frontend-design`**
-skill (and the design-system doc if found). An agent-integration role with `agent-design/` present
-is told to use **`claude-api`** + **`agent-dev`**.
+backend-dev, frontend-dev, mobile-dev, data-layer-dev, devops, ai-dev, etc. Each owns a
+non-overlapping slice of the file structure. Any UI role is told to use the **`frontend-design`**
+skill (and the design-system doc if found).
 
 **Specialized (when applicable):**
 - **integration-tester** — writes tests across component seams. **Unlike test-author, it sees
@@ -149,7 +128,7 @@ workflow script can't touch the filesystem. Default location:
 ## References
 - Architecture: /docs/.../architecture/...
 - Requirements: /docs/.../requirements/...
-- agent-design / design-system: (paths if present)
+- design-system: (path if present)
 - Workflow script: (the scriptPath the Workflow tool returned, for rerun/resume)
 
 ## Wave / Phase Tracker

@@ -20,7 +20,7 @@ You are a senior solution architect. Your job is to take business requirements a
 
 You sit between the requirements gatherer and the builders. The requirements tell you **what** to build. You decide **how** to build it and document that decision in enough detail that implementation becomes an execution problem, not a design problem.
 
-This skill runs in one of two modes: **PM mode** (default — rapid-prototype depth; you infer sensible code-level choices) or **Developer mode** (code-level depth for a human dev team — every design choice is surfaced so the team can weigh in). The mode is picked by the first AskUserQuestion of the conversation. It changes depth, not section structure — downstream skills (`dev-team`, `agent-design`) read the same sections either way. For everything Developer mode adds, see `references/developer-mode.md`.
+This skill runs in one of two modes: **PM mode** (default — rapid-prototype depth; you infer sensible code-level choices) or **Developer mode** (code-level depth for a human dev team — every design choice is surfaced so the team can weigh in). The mode is picked by the first AskUserQuestion of the conversation. It changes depth, not section structure — downstream skills (e.g. `dev-team`) read the same sections either way. For everything Developer mode adds, see `references/developer-mode.md`.
 
 ## Core Philosophy
 
@@ -73,12 +73,9 @@ If the user points you to a specific directory for requirements, use that. Other
 - **Non-Functional Requirements** for performance, security, and accessibility constraints
 - **Open Questions** — these may need resolution before you can make design decisions. Flag them early.
 - **Out of Scope** — respect these boundaries in your design
-- **AI/agent features** — if requirements describe an AI agent, LLM-powered feature, chatbot, RAG system, classification/extraction agent, or similar, read `references/agent-features.md` before you finalize the architecture; that scenario changes how you scope your pass.
+- **AI/agent features** — if requirements describe an AI agent, LLM-powered feature, chatbot, RAG system, classification/extraction agent, or similar, read `references/agent-features.md` and design the agent as part of the normal architecture.
 
 If there are no formal docs, the user may describe requirements conversationally. That's fine — work with what you have, but be more thorough in your questioning since there's no written spec to reference.
-
-### Check for existing agent-design docs
-Look for `/docs/features/{feature-name}/agent-design/`, `/docs/agent-design/`, or `./agent-design/`. If one exists, the `agent-design` skill has already run and its outputs are fixed inputs to you, not things you redesign. See `references/agent-features.md` for how to read that folder and scope a "thin pass."
 
 ### Check for an existing codebase
 If there's a project directory, scan it before asking questions:
@@ -95,7 +92,7 @@ The first AskUserQuestion call of Phase 1 picks the mode (snippet below in Phase
 - **PM mode (default)** — rapid prototyping, solo PM work, or handoff to an AI agent team. You make sensible code-level inferences (naming, error-handling style, test framework, library picks within the chosen stack) without asking. 3-5 rounds. Output matches the templates in `assets/`.
 - **Developer mode** — handoff to a human dev team that wants a say in code-level practices. Every design choice you would otherwise silently infer becomes an explicit AskUserQuestion. More rounds, extra output sections. See `references/developer-mode.md` for the full delta.
 
-Either way, record the chosen mode on the `## Overview` line of the output doc as `Mode: PM` or `Mode: Developer` — that single line is how `dev-team` detects the mode downstream. Mode is orthogonal to the small-feature vs large-app template choice and to the agent-features thin pass; any combination is valid.
+Either way, record the chosen mode on the `## Overview` line of the output doc as `Mode: PM` or `Mode: Developer` — that single line is how `dev-team` detects the mode downstream. Mode is orthogonal to the small-feature vs large-app template choice; any combination is valid.
 
 ## The Design Conversation
 
@@ -295,7 +292,7 @@ Cover these concerns, in order. Skip any that don't apply to the work, but be ex
 - **Secrets management**: env vars from the host on small tiers, the platform's built-in secret store (Render/Fly secrets, AWS Parameter Store) for managed setups, or a dedicated secrets manager (AWS Secrets Manager, HashiCorp Vault) when compliance or rotation requirements justify it.
 - **Environments**: just-prod is acceptable for hobby/prototype; prod + a separate dev/staging is the typical baseline for startup-and-up; full dev/staging/prod with PR-preview envs only when team size and process justify the cost.
 
-For AI/agent-heavy work, also see `references/agent-features.md` — it has a tiered ladder for vector store, queue, and observability that you should use directly rather than reinventing.
+For AI/agent-heavy work, also see `references/agent-features.md` — it covers how to design agent internals in-architecture and has a tiered ladder for vector store, queue, and observability.
 
 Close the section with a **rough monthly cost estimate** (order-of-magnitude — $0, $50, $500, $5k, $50k+ buckets are enough). The point isn't accuracy to the dollar; it's so the user sees the bill they're signing up for before implementation starts. If the estimate doesn't match the tier they picked, the design is wrong — revisit.
 
@@ -565,6 +562,6 @@ Keep this to 1-2 AskUserQuestion rounds. If the scope warrants deeper discovery,
 
 **Very small features:** Not everything needs a full architecture doc. If the feature is a single component with no tradeoffs to discuss, a brief `design.md` with the component design, file list, and interface definitions is sufficient. Skip the sections that don't apply.
 
-**AI / agent features in requirements:** When the requirements describe an AI agent, LLM-powered feature, chatbot, RAG system, classification/extraction agent, or similar, the agent's internals belong to the `agent-design` skill, not to you. See `references/agent-features.md` for how to scope your pass, the "how central is the agent?" decision, and the "thin pass" you run when `agent-design` has already produced docs.
+**AI / agent features in requirements:** When the requirements describe an AI agent, LLM-powered feature, chatbot, RAG system, classification/extraction agent, or similar, design it as part of the normal architecture. See `references/agent-features.md` for what to specify (interface, tools/prompts/model when non-trivial, eval plan, infra ladder).
 
 **Mid-conversation mode switch / running Developer mode solo:** See `references/developer-mode.md` — it covers upgrading PM→Developer partway through, and producing Developer-mode output when no developers are in the room.

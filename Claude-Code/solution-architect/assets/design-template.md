@@ -7,7 +7,6 @@ Brief summary of what's being built and the key technical approach.
 
 ## Requirements Reference
 Path to the business requirements this design is based on: `[actual path used]`
-(If an `agent-design/` directory informed this design, list its path here too.)
 
 ## Tech Stack
 Languages, frameworks, and key libraries. For existing projects, note any additions.

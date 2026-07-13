@@ -9,7 +9,6 @@ What's being built and why, in a few sentences.
 
 ## Requirements Reference
 Path(s) to the business requirements this architecture is based on.
-(If an `agent-design/` directory informed this design, list its path here too.)
 
 ## Tech Stack
 Languages, frameworks, datastores, key libraries. (Deployment infra lives in `deployment.md`.)
