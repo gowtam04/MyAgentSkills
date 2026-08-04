@@ -1,4 +1,0 @@
-interface:
-  display_name: "Product Discovery"
-  short_description: "Interview into architecture-ready requirements (ask_user_question + plan mode)"
-  default_prompt: "Use /product-discovery to interview me and write requirements for this app."

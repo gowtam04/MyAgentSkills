@@ -1,13 +1,37 @@
 # API Design
 
-( Omit this file for pure internal or non-API work. )
+(Omit this file for pure internal or non-API work.)
 
-Full contract for external or major internal APIs:
+Full contract for external or major internal APIs. Scale detail to risk: high detail on security-sensitive or non-standard endpoints; lighter on conventional CRUD.
 
-- Routes / methods / auth
-- Request/response shapes (with field-level notes for non-obvious items)
-- Error envelope and common error codes
-- Pagination, filtering, sorting conventions
-- Rate limiting / idempotency expectations (if relevant)
+## Conventions
 
-High detail on security-sensitive or non-standard endpoints; lighter detail on conventional CRUD.
+- Base path / versioning:
+- Auth scheme:
+- Error envelope (example):
+- Pagination / filtering / sorting:
+- Idempotency / rate limits (if relevant):
+
+## Endpoints
+
+### `{METHOD} {path}`
+
+| | |
+|--|--|
+| Purpose | |
+| Auth | required role / public |
+| Request | fields + types + validation |
+| Response | success shape |
+| Errors | codes + when they occur |
+| Side effects | emails, jobs, webhooks |
+| Notes | retries, pagination, etc. |
+
+## Internal Interfaces (optional)
+
+For non-HTTP seams that builders could get wrong: function signatures, events, message shapes, error types.
+
+## External Providers
+
+| Provider | Owned by | Failure handling | Secrets |
+|----------|----------|------------------|---------|
+| | | | |

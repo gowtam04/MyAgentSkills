@@ -1,9 +1,40 @@
 # Data Model
 
-Complete entity definitions, fields, types, relationships, uniqueness/validation constraints, lifecycle notes, and indexes for expected query patterns.
+Complete entity definitions grounded in requirements. Every entity and field should trace to a product need.
 
-Include a textual ERD or table description.
+## Textual ERD
 
-Ground every entity and field in the requirements. Note any migration or seed considerations.
+```text
+User 1--* Order
+Order *--* Product (via OrderLine)
+```
 
-**For /build-orchestrator**: This section (plus the interface definitions in component/api docs) is the primary contract for the test-author subagent when writing tests before implementation.
+## Entities
+
+### {EntityName}
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| id | uuid / int | yes | |
+| ... | | | |
+
+- **Ownership:** who/what owns this record
+- **Lifecycle:** create → active → archive/delete rules
+- **Uniqueness / validation:** business constraints
+- **Permissions:** who can read/write
+- **Indexes / query patterns:** only when they shape architecture
+- **Requirement trace:** story or FR id/path
+
+## Relationships
+
+| From | To | Cardinality | Cascade / constraints |
+|------|-----|-------------|------------------------|
+| | | | |
+
+## Migrations And Seeds (if brownfield or multi-phase)
+
+- Migration strategy (additive, dual-write, backfill)
+- Seed/demo data needs
+- Compatibility with existing data
+
+**For /build-orchestrator:** This file plus API/component interfaces is the primary contract for the test-author when writing tests before implementation.

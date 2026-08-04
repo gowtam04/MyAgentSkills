@@ -1,7 +1,39 @@
 # Code Conventions *(Developer mode only)*
 
-Naming patterns, module boundaries, error-handling style + envelope shape, logging library + required structured fields, lint/format stance, cross-cutting patterns (transactions, concurrency, frontend state management).
+Delete this file in PM mode.
 
-Record any code-level decisions surfaced during the design conversation, with brief rationale.
+## Naming And Module Boundaries
 
-This file is deleted in PM mode output.
+- Packages/modules:
+- File naming:
+- Public vs internal exports:
+
+## Errors
+
+- Style: exceptions | Result/Either | API error envelope
+- Envelope shape (example):
+- Mapping to HTTP/status codes:
+
+## Logging
+
+- Library:
+- Required structured fields (request id, user id, etc.):
+
+## Transactions And Concurrency
+
+- Transaction boundaries:
+- Concurrency notes:
+
+## Frontend State (if UI)
+
+- Server state:
+- Client/UI state:
+- Forms:
+
+## Lint / Format
+
+- Tools and whether CI enforces them:
+
+## Recorded Decisions
+
+Code-level choices surfaced in the design conversation, with brief rationale. Mark any solo "Proposed - confirm with dev team" items.

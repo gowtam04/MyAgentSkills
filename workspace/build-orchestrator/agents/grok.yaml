@@ -1,4 +1,0 @@
-interface:
-  display_name: "Build Orchestrator"
-  short_description: "Coordinate subagent TDD delivery from blueprints (ownership + todo_write)"
-  default_prompt: "Use /build-orchestrator to coordinate Grok subagents to implement this architecture."

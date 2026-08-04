@@ -1,4 +1,4 @@
 interface:
   display_name: "Build Orchestrator"
-  short_description: "Coordinate Grok subagent teams through TDD delivery from architecture blueprints (strong todo_write + spawn_subagent discipline)"
+  short_description: "Coordinate subagent TDD delivery from blueprints (ownership + todo_write)"
   default_prompt: "Use /build-orchestrator to coordinate Grok subagents to implement this architecture."

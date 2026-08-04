@@ -73,8 +73,16 @@ If a PM runs Developer mode without developers present, still recommend concrete
 
 If the user upgrades PM mode to Developer mode before implementation, ask a follow-up batch for the code-level choices PM mode skipped, then update the docs in place. Downgrading after docs are written is unnecessary; the extra detail is usually harmless.
 
+## Interface Scale-To-Risk Test
+
+For each seam ask: would a builder or subagent plausibly get this wrong without guidance?
+
+- **Yes** → full signatures/types/errors/auth/side effects.
+- **No** (conventional CRUD matching repo patterns) → light shapes and a pointer to the existing pattern.
+
 ## Grok-Specific Notes
 
-- All surfaced decisions use `ask_user_question` (structured cards with implications in descriptions).
+- All surfaced decisions use `ask_user_question` (structured cards with implications in descriptions). Parameter for multi-pick is `multi_select` (not `multiSelect`).
 - When this skill itself needs to plan a large or ambiguous design, it should offer to call `enter_plan_mode` so the user reviews a documentation-only plan before files are written.
 - Subagent usage (if any) for exploration must follow strict tool-call discipline: the `spawn_subagent` call precedes any claim that a worker was launched.
+- `/build-orchestrator` uses Mode to right-size TDD rigor; Developer mode implies fuller test/review cycles.
