@@ -52,7 +52,7 @@ Example shape:
 - `data-model.md` - entities, relationships, ERD, migrations
 - `component-design.md` - component breakdown, interfaces, dependencies
 - `api-design.md` - endpoints, request/response shapes, auth, errors
-- `implementation-plan.md` - phased build plan with file ownership
+- `implementation-plan.md` - phased build plan with file ownership, integration checkpoints, and Build Manifest
 - `decisions.md` - Architecture Decision Records (ADRs)
 - `deployment.md` - hosting, datastore, jobs, storage, observability, secrets, environments, cost estimate
 - `conventions.md` - *(Developer mode only)* naming, error handling, logging, transactions

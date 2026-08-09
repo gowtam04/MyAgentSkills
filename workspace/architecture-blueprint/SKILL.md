@@ -28,7 +28,7 @@ Act as a senior solution architect. Convert product requirements into an impleme
 - **Every consequential decision must go through `ask_user_question`.** Present 2–4 realistic options with architectural implications in the descriptions. Batch related decisions. Use the automatic "Other" path for anything not covered.
 - Ask only for decisions that materially change the architecture. Infer ordinary coding details in PM mode; surface code-level decisions in Developer mode.
 - Right-size the docs. Small features use a single design file. Large/multi-phase apps use the multi-file architecture docs in `assets/large-app-docs/`.
-- Design for execution. Every file has an owner and purpose; every phase has dependencies, outputs, parallel opportunities, and a test focus.
+- Design for execution. Every file has an owner and purpose; every phase has dependencies, outputs, parallel opportunities, test focus, and **requirement refs**.
 - Only `/build-orchestrator` may implement application code. This skill's deliverable is architecture documentation only.
 - **Tool-call discipline**: If you claim you are launching a subagent or entering plan mode, the corresponding `spawn_subagent` or `enter_plan_mode` tool call must appear in the same assistant response before any narrative text about it.
 
@@ -53,10 +53,11 @@ When the design task has genuine architectural ambiguity (multiple reasonable to
 ## Before Designing
 
 1. Read requirements. Prefer a user-specified path; otherwise check `/docs/features/{feature-name}/requirements/` and `/docs/requirements/`.
-2. Read all requirement files you find. Note overview, user stories, functional requirements, non-functional requirements, constraints, open questions, and out-of-scope boundaries.
-3. Scan the existing codebase if present (timebox this). Identify stack, folder structure, data access, API/interface conventions, auth patterns, frontend patterns, test tools, and build tools. Go deep only where the new work touches.
-4. If requirements are missing or too thin, gather the minimum context needed via `ask_user_question`. For broad or fuzzy product questions, suggest running `/product-discovery` first.
-5. If a design system exists (`/docs/design-system/` or a path named in requirements), note it for UI-related components and phases. Do not invent a visual system here.
+2. Read all requirement files you find. Note overview, user stories, functional requirements, non-functional requirements, constraints, assumptions, open questions, and out-of-scope boundaries.
+3. **Requirement IDs:** Prefer stable IDs (`US-*`, `AC-*`, `BR-*`). If they are missing, either suggest a short polish pass with `/product-discovery` or mint provisional IDs with user confirmation via `ask_user_question` and flag the gap — never invent product acceptance criteria.
+4. Scan the existing codebase if present (timebox this). Identify stack, folder structure, data access, API/interface conventions, auth patterns, frontend patterns, test tools, and build tools. Go deep only where the new work touches. Optionally spawn an `explore` subagent (`capability_mode: "read-only"`) for a stack/conventions summary; obey tool-call discipline.
+5. If requirements are missing or too thin (no testable ACs, no clear workflows/rules), gather the minimum via `ask_user_question` or suggest `/product-discovery` first.
+6. If a design system exists (`/docs/design-system/` or a path named in requirements), note it for UI-related components and phases. Do not invent a visual system here.
 
 ## Skip Path
 
@@ -68,12 +69,12 @@ For a trivial one-file change the user wants coded immediately with no structura
 
 Summarize your understanding briefly in plain text, then make the **first** `ask_user_question` call include both mode and budget tier (batch any early architecture-changing ambiguities here too):
 
-- **PM mode** (default): Best for rapid prototypes, solo builders, and `/build-orchestrator` handoff. Infer sensible code-level defaults. Keep the design conversation to roughly 3–5 rounds.
-- **Developer mode**: Best for human dev teams. Surface code-level choices that PM mode would infer (ORM/auth/validation packages, error style, logging, transactions, state management, observability, testing). Use 5–8 rounds. Read `references/developer-mode.md`.
+- **PM mode** (default): Best for rapid prototypes, solo builders, and `/build-orchestrator` handoff. Infer sensible code-level defaults. Batch aggressively; rounds are a *target for batching*, not a hard stop while architecture-changing questions remain.
+- **Developer mode**: Best for human dev teams. Surface code-level choices that PM mode would infer (ORM/auth/validation packages, error style, logging, transactions, state management, observability, testing). Use more rounds as needed. Read `references/developer-mode.md`.
 
 Budget tier is a hard constraint on infrastructure (hobby/prototype, startup/lean, scaling/growth, enterprise/no constraint).
 
-**Tiny-feature shortcut:** If scope is clearly a small, focused change (few files, no new infra, existing stack), use **one** confirmation card that batches mode + budget + any single architecture ambiguity, then write `design.md` without stretching to 3–5 rounds.
+**Tiny-feature shortcut:** If scope is clearly a small, focused change (few files, no new infra, existing stack), use **one** confirmation card that batches mode + budget + any single architecture ambiguity, then write `design.md` without stretching the conversation.
 
 Record both in the output docs:
 
@@ -113,17 +114,41 @@ Cover the areas that apply (data model, components/modules, API/interfaces, inte
 
 **Interfaces:** Scale detail to risk — high detail for security-sensitive, complex, nonstandard, or integration-heavy areas; light detail for conventional CRUD. Test: would a builder plausibly get this wrong without guidance? If yes, specify it.
 
+**Autonomous-builder bias:** `/build-orchestrator` workers cannot ask mid-build. Bias **high detail at multi-worker seams** (shared contracts, auth, payments, nonstandard integrations) regardless of PM mode. Full signatures/types/errors/auth notes where a silent guess is expensive.
+
 In PM mode infer ordinary cross-cutting patterns; in Developer mode surface them via `ask_user_question` (see `references/developer-mode.md`).
+
+**Deployment:** Pin runnable commands (`test`, `test_one`, `typecheck`, `build`, and `lint` if relevant) so the Build Manifest and `/build-orchestrator` do not re-guess them. Every infra choice must fit the budget tier; include a rough monthly cost bucket.
 
 ### 6. Produce The Build Blueprint
 
 The blueprint must include:
 
 - Complete file structure with a purpose for every file (ownership map for `/build-orchestrator`). Run `references/ownership-checklist.md` before finishing.
-- Interface definitions at the seams (high detail for complex/security-sensitive/non-standard areas).
-- Granular implementation phases (prefer more smaller phases). Each phase: What gets built, Depends on, Produces, Parallel opportunities, Test focus. In Developer mode also Success criteria and Review checklist / test split.
+- Interface definitions at the seams (high detail for complex/security-sensitive/non-standard areas; high detail at multi-worker seams).
+- Granular implementation phases (prefer more smaller phases). Each phase: What gets built, Depends on, Produces, Parallel opportunities, Test focus, **Requirement refs** (`US-`/`AC-`/`BR-` IDs this phase satisfies; cite section + note the gap if IDs are missing — do not fabricate). In Developer mode also Success criteria and Review checklist / test split.
+- Explicit **integration checkpoints** (API↔data, UI↔API, auth cross-layer, final workflows).
+- **Build Manifest** for multi-phase work (required). Derived from prose; prose wins on conflict. See templates. Optional/inline for a trivial single-phase feature.
+
+**Parallel opportunities (for `/build-orchestrator`):** Only mark work as parallel when write sets are **fully disjoint** (no shared files, no dual ownership of types/helpers). List each parallel slice with its own file globs — vague "backend and frontend can run together" is not enough unless `owns` partitions prove it. Put collision files in manifest `shared` and do **not** list them under two parallel slices. Prefer more smaller phases with clear `owns` over one large phase with soft parallelism — the build skill will not invent extra writers when ownership is unclear.
 
 Typical full-stack sequence (adapt): scaffolding → data model → auth/permissions → core business logic → API layer → frontend foundation → feature UI → integration/polish.
+
+## Design Completeness Gate
+
+Do **not** write final architecture docs until:
+
+- [ ] Mode and Budget Tier are decided and will be recorded
+- [ ] Architecture-changing open questions are resolved or explicitly deferred with user OK
+- [ ] Stack (or fit-to-existing) is clear; topology recorded when large
+- [ ] Data model entities trace to requirements
+- [ ] File ownership map is complete (every create/modify file has purpose + owner)
+- [ ] Interfaces at multi-worker and high-risk seams are specified at autonomous-builder depth
+- [ ] Every phase has depends/produces/parallel/test focus/**requirement_refs**
+- [ ] Integration checkpoints are named
+- [ ] Deployment fits budget tier; build/test commands are pinned (or marked TBD for scaffold phase only)
+- [ ] Ownership checklist passes
+- [ ] Multi-phase work has a Build Manifest consistent with prose
 
 ## Output
 
@@ -136,24 +161,25 @@ Create directories as needed.
 
 ### Small Feature
 
-Copy `assets/design-template.md` to `design.md` and fill it in. Delete sections that do not apply. In PM mode, delete Developer-mode-only sections. In Developer mode, fill them using `references/developer-mode.md`.
+Copy `assets/design-template.md` to `design.md` and fill it in. Delete sections that do not apply. In PM mode, delete Developer-mode-only sections. In Developer mode, fill them using `references/developer-mode.md`. For multi-phase small features, include the Build Manifest; for a trivial single-phase feature, inline `owns` / `depends_on` / `requirement_refs` / `test_focus` into the phase prose and omit the YAML block.
 
 ### Large Application
 
-Copy `assets/large-app-docs/` into the architecture output directory, fill relevant files, and delete files that do not apply (delete `conventions.md` and `testing-strategy.md` in PM mode).
+Copy `assets/large-app-docs/` into the architecture output directory, fill relevant files, and delete files that do not apply (delete `conventions.md` and `testing-strategy.md` in PM mode). Always include the Build Manifest in `implementation-plan.md` for multi-phase work.
 
 ## Quality Bar
 
 The docs pass only if:
 
 - Every needed file is listed with a purpose and component ownership.
-- No two parallel phases require write access to the same file.
-- Every important interface is defined (detail scaled to risk of builder getting it wrong).
+- No two parallel phases require write access to the same file (shared files listed as `shared`, not dual-owned).
+- Every important interface is defined (detail scaled to risk + autonomous-builder seam bias).
 - Every hard-to-reverse technical decision has rationale, alternatives, and tradeoffs.
-- Phase order, dependencies, verification focus, and parallel opportunities are explicit.
+- Phase order, dependencies, verification focus, parallel opportunities, and **requirement refs** are explicit.
+- Multi-phase Build Manifest matches prose (names, owns, depends_on, requirement_refs, commands).
 - The deployment plan respects the budget tier and includes a rough cost estimate.
 - Mode and Budget Tier lines are present and accurate.
-- A competent builder or `/build-orchestrator` team can execute the plan without asking structural architecture questions.
+- A competent builder or `/build-orchestrator` team can execute the plan without asking structural architecture questions or inventing product behavior.
 
 Avoid vague statements like "the service layer handles business logic." Say what the service owns, what it exposes, what rules it enforces, and which callers depend on it.
 

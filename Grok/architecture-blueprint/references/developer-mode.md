@@ -54,6 +54,7 @@ Each implementation phase adds:
 
 - **Success criteria**: concrete outcomes beyond "tests pass."
 - **Review checklist / test split**: what is unit-tested, what is integrated, what is mocked, and what reviewers must check.
+- **Requirement refs** (both modes): US-/AC-/BR- IDs the phase satisfies — required for autonomous builders even when success criteria are Developer-only.
 
 ## Output Additions
 
@@ -79,6 +80,8 @@ For each seam ask: would a builder or subagent plausibly get this wrong without 
 
 - **Yes** → full signatures/types/errors/auth/side effects.
 - **No** (conventional CRUD matching repo patterns) → light shapes and a pointer to the existing pattern.
+
+When the consumer is `/build-orchestrator` (or any autonomous implementer that cannot ask mid-build), bias **Yes** at multi-worker seams regardless of PM vs Developer mode.
 
 ## Grok-Specific Notes
 

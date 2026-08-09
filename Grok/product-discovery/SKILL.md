@@ -20,20 +20,52 @@ Act as a senior product analyst. Interview the user to understand what the produ
 
 ## Core Rules
 
-- Ask before assuming. Every requirement should trace to the user, existing docs, or the current product surface. Put unresolved gaps in Open Questions.
+- Ask before assuming. Every requirement should trace to the user, existing docs, or the current product surface. Put unresolved gaps in Open Questions; put only user-approved speed-path guesses in Assumptions.
 - Stay at the product level. Capture technical preferences as constraints, but do not pick frameworks, databases, APIs, schemas, or infrastructure.
 - Right-size the interview. A small change may need only a few focused questions; a new app needs personas, workflows, data, rules, UX, and operational expectations.
 - **Decisions that need a user answer go through `ask_user_question`.** Use structured option cards (2–4 realistic options with helpful descriptions; the UI always offers "Other"). Plain-text recaps and short summaries between cards are fine and encouraged — do not bury a question that expects an answer only in prose.
 - End each interview turn either with an `ask_user_question` call or by writing/updating the requirements docs.
 - Only `/build-orchestrator` may implement application code. This skill's deliverable is requirements documentation only.
 
+## Depth Bar (Discovery Done Only When Met)
+
+Do **not** write final requirements docs until every applicable item below is true, or the user has explicitly chosen the speed path (see Anti-Assumption) with labeled Assumptions confirmed:
+
+1. **Workflows:** Each primary workflow has a step-by-step happy path plus named failure, edge, empty, conflict, and permission-deny states that matter for the product.
+2. **Capabilities:** Each capability users care about has **objectively testable** acceptance criteria (Given/When/Then or a concrete checkable assertion — not "works well").
+3. **Rules:** Every business rule that gates behavior has a stable ID and precise wording (validation, permissions, state transitions, calculations, notifications).
+4. **Roles & access:** Roles, goals, and permission boundaries are explicit enough that architecture will not invent who can do what.
+5. **Data (business level):** Key entities, relationships, ownership, and lifecycle are described without database design.
+6. **Boundaries:** Out-of-scope and success criteria are explicit; anything still fuzzy is in Open Questions or confirmed Assumptions.
+
+If a topic is still fuzzy, either drill deeper or record it under Open Questions — never silently fill it in.
+
+## Drill-Deeper Rule
+
+If the user picks a vague option, gives a brief "Other" answer, or says something like "standard X" / "normal auth" / "basic CRUD," do **not** advance that topic. Issue a follow-up `ask_user_question` that decomposes it into concrete product choices (e.g. "standard login" → email/password vs social vs SSO vs magic link, with implications in descriptions).
+
+Apply this whenever an answer would leave a downstream architect or builder guessing. Prefer 1–2 focused follow-ups over a long quiz.
+
+## Anti-Assumption Rule
+
+Default is **ask**. Do not invent product behavior, rules, or acceptance criteria.
+
+**Speed path (opt-in only):** Use only when the user explicitly wants to go fast. Then:
+
+1. Ask only the highest-impact unknowns.
+2. State each assumption in plain text.
+3. Confirm assumptions via `ask_user_question` before writing final docs.
+4. Record every assumption under **Assumptions** in the docs (never mix them into Functional Requirements as if decided).
+
+Without an explicit speed request, do not compress discovery by assuming.
+
 ## Non-Negotiable Flow
 
 **Interview first, then write final docs.**
 
 - Do not create `requirements.md` (or multi-file requirements) as a scratchpad mid-interview.
-- Use conversation recaps for interim notes. Write final docs only after key product choices, workflows, rules, and constraints are clear enough for architecture.
-- If the user provides a complete brief up front, read it, identify material gaps, ask only about those gaps, then write docs.
+- Use conversation recaps for interim notes. Write final docs only after the depth bar is met (or speed path + confirmed assumptions).
+- If the user provides a complete brief up front, read it, identify material gaps, ask only about those gaps (drill deeper where vague), then write docs.
 
 ## Plan Mode Output Contract
 
@@ -62,7 +94,7 @@ Scan for context first:
 
 ## Skip Path
 
-If the user already has specific, architecture-ready requirements (clear personas, workflows, rules, acceptance criteria, constraints), confirm via `ask_user_question` and either polish the existing docs or hand off immediately to `/architecture-blueprint`. Do not re-interview for sport.
+If the user already has specific, architecture-ready requirements (clear personas, workflows, rules with stable IDs or equivalent addressability, testable acceptance criteria, constraints), confirm via `ask_user_question` and either polish the existing docs (add IDs if missing) or hand off immediately to `/architecture-blueprint`. Do not re-interview for sport.
 
 ## Interview Flow
 
@@ -82,22 +114,22 @@ Use 1–3 focused questions per call. Provide 2–4 realistic options with descr
 For each user role, capture:
 
 - Primary goals and pain points.
-- Happy-path workflows step by step.
+- Happy-path workflows step by step (what they see first, what they do next).
 - First-run or onboarding experience.
 - Edge cases, failure states, conflicts, empty states, and permission boundaries.
 
-Batch related role/workflow questions. Use `multi_select: true` where the user may pick several roles or patterns.
+Batch related role/workflow questions. Use `multi_select: true` where the user may pick several roles or patterns. Drill deeper when answers stay high-level.
 
 ### 3. Functional Requirements
 
 Document precise capabilities:
 
-- Features and actions users can perform.
+- Features and actions users can perform (specific verbs and objects, not feature names alone).
 - Business rules: validation, permissions, state transitions, calculations, notifications.
 - Data concepts from a business perspective: entities, relationships, ownership, lifecycle.
 - Content, reports, imports/exports, integrations, and communication triggers.
 
-Prefer specific wording in follow-ups.
+For each major capability, get enough detail to write testable acceptance criteria later. Prefer specific wording in follow-ups.
 
 ### 4. Non-Functional Requirements
 
@@ -120,12 +152,14 @@ Capture:
 - Timeline, budget, launch, or migration constraints.
 - Technical preferences as constraints only.
 - Existing systems that must be kept, integrated, or replaced.
-- Explicit out-of-scope items.
+- Explicit out-of-scope items (hard boundary for builders who cannot ask back).
 - Priority guidance without vague MVP tier theater.
 
 ### 7. Confirm And Close
 
-After major sections, summarize what you heard in plain text, then follow with an `ask_user_question` confirmation card (Yes / Mostly right / Needs rework). Stop asking when requirements are specific enough for architecture. If the user wants speed, compress, make conservative assumptions (explicitly marked), and confirm.
+After major sections, summarize what you heard in plain text, then follow with an `ask_user_question` confirmation card (Yes / Mostly right / Needs rework).
+
+Before writing final docs, run a **depth-bar check** in plain text (what is solid vs still open), then confirm via `ask_user_question` that discovery is complete enough to document (or enter speed path with listed assumptions).
 
 ## Keep The Boundary Clean
 
@@ -138,7 +172,7 @@ If the user starts choosing frameworks, databases, APIs, or detailed implementat
 
 ## Writing The Documentation
 
-Write docs only after discovery is complete enough.
+Write docs only after the depth bar is met (or speed path + confirmed assumptions).
 
 Paths:
 
@@ -161,9 +195,12 @@ What this feature does, who it serves, and why it matters.
 User types, goals, and relevant context.
 
 ## User Stories
-- As a [user type], I want to [action] so that [benefit].
-  Acceptance criteria:
-  - [Specific observable outcome]
+Give every story a stable ID (US-1, US-2, …) and every acceptance criterion its own stable ID
+(AC-1.1, AC-1.2 under US-1). Keep IDs stable once assigned; append, don't renumber.
+
+- **US-1** — As a [user type], I want to [action] so that [benefit].
+  - **AC-1.1** — Given [context], when [action], then [observable result].
+  - **AC-1.2** — [concrete checkable assertion with specific values — not "works well"]
 
 ## Functional Requirements
 ### [Area]
@@ -171,6 +208,7 @@ User types, goals, and relevant context.
 
 ## Business Rules
 Validation, permissions, status transitions, calculations, notifications.
+Give each rule a stable ID (BR-1, BR-2, …).
 
 ## Non-Functional Requirements
 Performance, reliability, accessibility, platform, scale, compliance, privacy.
@@ -181,38 +219,37 @@ Screens, interaction patterns, responsive expectations, references. Omit for non
 ## Constraints and Preferences
 Timeline, budget, technical preferences, existing systems.
 
+## Assumptions
+Only speed-path items the user confirmed. Empty if none.
+
 ## Open Questions
 Only unresolved items that genuinely remain.
 
 ## Out of Scope
-Explicit exclusions.
+Explicit exclusions. Treat as a hard boundary for autonomous builders.
 ```
 
 ### Large Application
 
-Split by functional domain, not interview order. See `references/large-app-structure.md` for the standard multi-file layout. Group requirements that share users, entities, rules, or workflows so `/architecture-blueprint` can produce granular phases.
+Split by functional domain, not interview order. See `references/large-app-structure.md` for the standard multi-file layout. Group requirements that share users, entities, rules, or workflows so `/architecture-blueprint` can produce granular phases. Carry stable IDs (US-/AC-/BR-), namespaced per area when helpful (e.g. `AUTH-US-1`, `BILLING-BR-2`).
 
 ## Writing Standard
 
 Finished requirements should be:
 
-- Specific enough for architecture without inventing intent.
+- **Specific enough for architecture** without inventing intent.
+- **Addressable and verifiable:** every user story, acceptance criterion, and business rule has a stable ID; ACs are objectively testable so a builder can verify without asking back.
 - Organized by feature/domain, not interview chronology.
 - Free of technical decisions except user-stated preferences recorded as constraints.
-- Honest about unknowns, assumptions, out-of-scope items, and unresolved conflicts.
+- Honest about unknowns (Open Questions), speed-path Assumptions, out-of-scope items, and unresolved conflicts.
 
 **Bad:** "Users can manage their profile."
 
-**Good:** "Users can update display name, email address, and profile photo. Email changes require re-verification before the new address is used for notifications."
+**Good:** "Users can update display name (max 50 characters), email address (must re-verify before the new address is used for notifications), and profile photo (JPEG or PNG, max 5MB, displayed as a square crop)."
 
-## Quality Bar
+**Bad AC:** "Login works correctly."
 
-The final docs should be:
-
-- Specific enough that an architect can design from them without inventing intent.
-- Organized by feature/domain, not interview chronology.
-- Free of technical decisions, except user-stated preferences recorded as constraints.
-- Honest about unknowns, assumptions, out-of-scope items, and unresolved conflicts.
+**Good AC:** "**AC-2.1** — Given a registered user with a valid password, when they submit email and password on the login form, then they are signed in and land on the dashboard within one navigation."
 
 After writing, present the docs briefly and ask for review via `ask_user_question`. If approved, tell the user the next step is technical architecture with `/architecture-blueprint`.
 
@@ -220,8 +257,8 @@ After writing, present the docs briefly and ask for review via `ask_user_questio
 
 - **Existing product change:** focus on current behavior, desired behavior, and the delta.
 - **User is unsure:** start from the problem, users, and success criteria; offer concrete product directions.
-- **User wants speed:** ask only the highest-impact questions, make reasonable assumptions, and label them.
-- **User provides a brief:** use it as input, identify gaps, ask only about those gaps, then write docs.
+- **User wants speed (explicit):** highest-impact questions only; label assumptions; confirm via card; record under Assumptions.
+- **User provides a brief:** use it as input, identify gaps, drill vague spots, then write docs.
 - **Technical-heavy user:** capture preferences as constraints and keep requirements at the WHAT and WHY layer.
 
 ## Handoff

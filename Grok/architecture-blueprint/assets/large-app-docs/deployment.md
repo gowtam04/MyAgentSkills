@@ -4,6 +4,18 @@ Budget Tier: [hobby | startup | scaling | enterprise] — every choice below mus
 
 For each concern: state the **choice**, a one-line **why this fits the tier**, and any **ops notes**.
 
+## Build & Test Commands
+
+Source of truth for `/build-orchestrator` and the Build Manifest in `implementation-plan.md` — keep them identical. If a command is not known yet (greenfield scaffold), write the intended command and mark `TBD — set in scaffold phase`.
+
+| Command | Value |
+|---------|--------|
+| test | |
+| test_one | |
+| typecheck | |
+| build | |
+| lint (optional) | |
+
 ## Hosting / Runtime
 
 - Choice:

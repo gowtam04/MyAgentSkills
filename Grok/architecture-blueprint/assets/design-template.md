@@ -23,6 +23,7 @@ If a component needs a paragraph to explain its purpose, split it or clarify the
 Endpoints, request/response shapes, auth patterns, error envelope.
 (Omit for non-API work.)
 Scale detail to risk: high for security-sensitive/nonstandard seams; light for conventional CRUD.
+Bias high detail at multi-worker seams (autonomous builders cannot ask mid-build).
 
 ## File Structure
 Complete file tree with descriptions. This is the ownership map — each file has one purpose;
@@ -32,18 +33,40 @@ no two builders (or parallel subagents) should need to edit the same file in the
 Key contracts between components — function signatures, types, error types.
 Scale detail to complexity (high detail where a builder or subagent could plausibly get it wrong;
 light detail for conventional CRUD). In Developer mode, default to high detail.
+For `/build-orchestrator` handoff, bias high detail at seams regardless of mode.
 
 ## Implementation Phases
 Ordered, granular, build-order phases. For each phase:
 - What gets built (specific files/components)
 - What it depends on (which prior phase)
 - What it produces (interfaces/files available after)
-- Parallel opportunities (disjoint write sets only)
+- Parallel opportunities (fully disjoint write sets only — list slices + globs, or "none — sequential")
 - Test focus (what the phase's tests verify)
+- **Requirement refs** — US-/AC-/BR- IDs this phase satisfies (cite section + note gap if IDs missing)
 - (Developer mode) Success criteria — concrete reviewable outcomes beyond "tests pass"
 - (Developer mode) Review checklist / test split — unit vs integration, mocked vs real, review gates
 
 Call out integration seams: API↔data, UI↔API, auth cross-layer, final workflow verification.
+
+## Build Manifest  *(required for multi-phase builds; optional/inline for a trivial single-phase feature)*
+Derived projection of File Structure (ownership) and Implementation Phases (DAG, refs). Prose above is the source of truth; generate last and keep consistent. `commands` mirrors Deployment below.
+
+```yaml
+commands: { test: "...", test_one: "...", typecheck: "...", build: "..." }
+phases:
+  - id: p1
+    name: ...               # MUST match the prose phase name
+    depends_on: []          # MUST match the prose "depends on"
+    owns:   ["..."]         # globs from the File Structure; no two phases overlap
+    shared: ["..."]         # files touched by >1 phase — collision points
+    requirement_refs: [US-1, AC-1.1]
+    test_focus: "..."
+    flags: []               # optional: scaffold | ui | ai
+integration_checkpoints:
+  - { after: [...], name: ..., verifies: "..." }
+```
+
+For a trivial single-phase feature, inline `owns` / `depends_on` / `requirement_refs` / `test_focus` into the prose phase and omit this block.
 
 ## Technical Decisions
 Significant choices, alternatives considered, rationale, tradeoffs accepted.
@@ -51,6 +74,13 @@ Use ADR-style bullets for hard-to-reverse choices.
 
 ## Deployment & Infrastructure
 Restate the budget tier on the first line so the reader has it in context.
+
+**Build & Test Commands** (source of truth; keep Build Manifest identical):
+- test:
+- test_one:
+- typecheck:
+- build:
+- lint: (if relevant)
 
 For each concern, state the choice and a one-line "why this fits the tier":
 - **Hosting / runtime** - where the app runs (VM, PaaS, container platform, K8s, serverless)
