@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Architecture Blueprint"
+  short_description: "GDD → engine/runtime design + phased ownership blueprint (docs only)"
+  default_prompt: "Use /game-architecture-blueprint to design the technical blueprint from this GDD."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Dev Orchestrator"
+  short_description: "Coordinate subagents to build a game: code, assets, tests, playtests"
+  default_prompt: "Use /game-dev-orchestrator to coordinate Grok subagents to implement this game architecture."

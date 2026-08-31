@@ -24,7 +24,7 @@ Act as a senior game designer and design-document lead. Interview the user until
 - **Interview first, write final docs second.** Do not create GDD files as a scratchpad mid-interview. Use conversation recaps for interim notes.
 - **Pull, do not wait to be told.** Most creators know the game but cannot articulate systems, edge cases, feel, or scope. Use concrete options, reference-game calibration, scenario questions, and "what it is *not*" to surface decisions. Read `references/interview-playbook.md` at the start of every run.
 - **Decisions that need an answer go through `ask_user_question`.** Use structured cards (2–4 options with tradeoff descriptions; UI always offers Other). Plain-text recaps between cards are encouraged. End each interview turn with either an `ask_user_question` call or by writing/updating docs.
-- **Design is the player experience, not engine code.** Capture technical preferences as constraints. Do not invent architecture, schemas, or framework choices—those belong to architecture/build skills.
+- **Design is the player experience, not engine code.** Capture technical preferences as constraints. Do not invent architecture, schemas, or framework choices—those belong to `/game-architecture-blueprint`.
 - **Mark unproven vs proven.** Anything not validated in a prototype is a design hypothesis. Label it. A good GDD is a living source of intent, not a waterfall novel that pretends the game is already solved.
 - **Right-size the package.** A jam game may be a one-pager + core systems file. A multi-system game gets the full multi-file set. Never invent sections that do not apply (skip multiplayer docs for single-player-only, etc.).
 - **This skill's deliverable is documentation only.** Do not implement game code, generate assets, or scaffold projects here.
@@ -51,7 +51,7 @@ Ask only what cannot be discovered locally.
 
 ## Skip Path
 
-If the user already has architecture-ready design docs (clear pillars, core loop, systems with rules, content volume, out-of-scope), confirm via `ask_user_question` and either polish those docs or hand off. Do not re-interview for sport.
+If the user already has architecture-ready design docs (clear pillars, core loop, systems with rules, content volume, out-of-scope), confirm via `ask_user_question` and either polish those docs or hand off to `/game-architecture-blueprint`. Do not re-interview for sport.
 
 ## Interview Flow
 
@@ -129,7 +129,7 @@ Summarize a **design digest** in prose (pitch, pillars, core loop, major systems
 | UX flows and feel goals | Pixel-perfect comps as final art |
 | Production scope and risks | CI/CD, repo layout |
 
-If the user jumps into pure engineering, record it under Constraints and return to design.
+If the user jumps into pure engineering, record it under Constraints and return to design. Technical architecture is `/game-architecture-blueprint`, not `/architecture-blueprint`.
 
 ## Writing The Documentation
 
@@ -192,9 +192,9 @@ The package is ready when:
 - Call out major assumptions and open questions.
 - Confirm via `ask_user_question`: approved / needs edits / resolve open questions first.
 - Suggest next steps when approved:
-  - Technical architecture / implementation plan for the stack they chose.
-  - Vertical-slice build.
-  - Art direction lock and asset lists derived from `06-art-audio-juice.md`.
+  - Technical architecture: `/game-architecture-blueprint` (skill: `game-architecture-blueprint`). Do not use `/architecture-blueprint` for a game.
+  - Coordinated slice build (code + assets + playtests): `/game-dev-orchestrator` after architecture is approved. Do not use `/build-orchestrator` for a game.
+  - Art direction lock and asset lists derived from `06-art-audio-juice.md` (architecture turns these into an Asset Manifest).
   - Feature-level design docs for the next system in production order.
 
 ## Special Scenarios
