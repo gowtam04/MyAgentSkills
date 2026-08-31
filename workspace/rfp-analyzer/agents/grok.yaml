@@ -1,0 +1,4 @@
+interface:
+  display_name: "RFP Analyzer"
+  short_description: "Cal eProcure URL → analysis briefing + master submission checklist"
+  default_prompt: "Use /rfp-analyzer on this Cal eProcure RFP link and produce the analysis report and master checklist."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "RFP Mock"
+  short_description: "Full MOCK proposal package for partner format review"
+  default_prompt: "Use /rfp-mock to generate a complete mock proposal package for this RFP using fake data, labeled MOCK."

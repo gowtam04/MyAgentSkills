@@ -1,0 +1,4 @@
+interface:
+  display_name: "RFP Config"
+  short_description: "Prime/sub + resource assignment → partner Prime and Sub checklists"
+  default_prompt: "Use /rfp-config to set prime vs sub for this RFP, assign resources, and generate the partner checklists."

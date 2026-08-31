@@ -1,0 +1,4 @@
+interface:
+  display_name: "RFP Generate"
+  short_description: "Intake real facts, then write the final Cal eProcure proposal"
+  default_prompt: "Use /rfp-generate to collect every required fact for this RFP (do not invent) and then produce the final proposal package."
