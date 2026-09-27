@@ -1,0 +1,25 @@
+{
+  "skill_name": "claude-build",
+  "evals": [
+    {
+      "id": 3,
+      "prompt": "Build this — the architecture is in docs/architecture/design.md. Dry run: write docs/progress/dry-run-plan.md with kickoff answers applied (recommended model routing, subagents, allow rules), the wave schedule, the exact Agent calls for wave 3's first workers plus p4c's test-writer and implementer, and the git commands for p4a.",
+      "expected_output": "A dry-run plan showing explicit models, isolated test-writers, locked tests, explicit git paths, parallel launch",
+      "files": [
+        "evals/files/bookmarks-arch"
+      ],
+      "assertions": [
+        "docs/progress/dry-run-plan.md exists",
+        "Every Agent call sets model explicitly per the routing (none omitted, none fable)",
+        "Test-writer prompts contain no implementation file paths",
+        "Implementer prompts forbid editing the test files",
+        "The git plan commits p4a's tests before its implementation",
+        "git add uses explicit paths (never -A or '.')",
+        "Wave 3's first workers are launched together in one message",
+        "p4c (risk: high) gets a test review before implementation and a panel review after",
+        "Worker prompts tell workers not to run state-changing git commands",
+        "No files other than the plan were created or modified"
+      ]
+    }
+  ]
+}

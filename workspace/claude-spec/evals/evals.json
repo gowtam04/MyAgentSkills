@@ -1,0 +1,21 @@
+{
+  "skill_name": "claude-spec",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I run a 6-person landscaping company. I want a small web app where crews log hours and materials per job from their phones, I approve timesheets weekly, and at month end I export hours per client as a CSV for invoicing in QuickBooks (just the CSV, no integration). Crew members only see their own entries; my office manager can edit anyone's entries but can't approve. I'm slammed this week — don't interview me, make reasonable calls and write the requirements doc.",
+      "expected_output": "A requirements package with stable IDs, testable ACs, labeled assumptions and a clear out-of-scope, written without interviewing",
+      "files": [],
+      "assertions": [
+        "Requirements docs are written under docs/requirements/",
+        "Every user story has a stable US-n ID and every acceptance criterion an AC-n.m ID",
+        "At least 80% of acceptance criteria are Given/When/Then or contain a concrete value",
+        "Business rules have BR-n IDs and include both 'office manager can edit but not approve' and 'crew see only their own entries'",
+        "Guessed decisions are listed in a separate Assumptions section, not presented as decided",
+        "Out of Scope explicitly excludes a QuickBooks integration (CSV only)",
+        "No technical decisions (frameworks, databases, API styles) appear outside a constraints/preferences section",
+        "Failure or edge states are covered (e.g. rejected timesheet, edits after approval, offline or missing data)"
+      ]
+    }
+  ]
+}

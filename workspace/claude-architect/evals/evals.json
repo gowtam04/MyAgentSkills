@@ -1,0 +1,23 @@
+{
+  "skill_name": "claude-architect",
+  "evals": [
+    {
+      "id": 2,
+      "prompt": "Requirements are in docs/requirements/. Design the architecture so we can hand it to the build team. I'm away today, so here are my answers up front: PM mode, startup/lean budget, greenfield — TypeScript like the requirements say. For anything else you'd normally ask me, pick your recommended option and note it in the docs.",
+      "expected_output": "Architecture docs with a valid Build Manifest, pinned smoke command, parallel waves, requirement coverage, no code",
+      "files": [
+        "evals/files/expense-reqs"
+      ],
+      "assertions": [
+        "check_manifest.py reports 0 errors against the requirements (Build Manifest present and valid)",
+        "Docs record 'Mode: PM' and a startup/lean budget tier",
+        "A smoke command is pinned in the manifest commands",
+        "A Parallel Waves table is present and the widest computed wave has at least 3 phases",
+        "Every US and BR in the requirements is cited by a phase or explicitly deferred",
+        "The approval/permission logic (BR-2) sits in a phase marked risk: high",
+        "A rough monthly cost estimate is stated",
+        "No application source code was written (only docs/ changed)"
+      ]
+    }
+  ]
+}
