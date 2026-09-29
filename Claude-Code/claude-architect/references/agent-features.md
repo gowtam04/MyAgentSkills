@@ -4,7 +4,18 @@ Read this when the requirements describe an AI agent, LLM-powered feature, chatb
 
 ## Design AI features as part of the architecture
 
-Design the agent (or LLM feature) **as part of the normal architecture** — not via a separate skill or deferred doc set. Mark its phases with `flags: [ai]` in the Build Manifest so the build knows to wire an eval harness. Include:
+## If `agent-design/` already exists
+
+The `agent-design` skill may already have specified the agent's internals: prompts, tools, data
+sources, output formats, eval cases and model. Then don't redesign any of it — treat the folder as
+a fixed constraint and do a **thin pass**: runtime and language, the file structure for the agent
+and its wrapper, the test framework and eval-harness shape, and the phases, with the AI phases
+marked `flags: [ai]`. Handoff: if the agent *is* the product, the next step is `agent-dev`; if it's
+one feature in a larger app, `claude-build` builds the app and loads `agent-dev` for the AI phases.
+
+Otherwise, design the agent (or LLM feature) **as part of the normal architecture**, with no
+separate doc set. Mark its phases with `flags: [ai]` in the Build Manifest so the build knows to
+wire an eval harness. Include:
 
 - where the agent lives in the file structure
 - what interface it exposes (input type, output type, error surface)

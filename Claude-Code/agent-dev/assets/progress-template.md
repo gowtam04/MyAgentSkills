@@ -1,46 +1,74 @@
-# {Agent Name} — Build Progress
+# {Agent Name} — Agent Build Progress
 
-## Status: IN PROGRESS
+Status: IN PROGRESS | BLOCKED | COMPLETE
 
-## Source Docs
-- Agent design: `/docs/features/{feature-name}/agent-design/`
-- Architecture (thin pass): `/docs/features/{feature-name}/architecture/`
-- Requirements: `/docs/features/{feature-name}/requirements/`
+## References
+- Agent design: `{path}/agent-design/`
+- Architecture (thin pass): `{path}`
+- Requirements: `{path}`
+- Build Manifest: present | absent (inferred — see Deviations) — `check_manifest.py`: {0 errors / notes}
+- Design system: `{path}` | none
+- Mode: PM | Developer   Budget tier: {tier}
+- Engine: subagents | workflow (script path: `{path}`)
+- Model routing: judgment-heavy phases (Opus implementer + panel + lead diff read): {ids} · all others: Sonnet implementer
+
+## Environment
+- Commands: install `…` · test `…` · test_one `…` · typecheck `…` · build `…` · smoke `…` · eval `…`
+- Baseline (before the build): {passed/failed; pre-existing failures listed here}
+- Permissions: {allow rules added | auto mode | prompts expected}
+
+## Resume Snapshot
+- Branch: `build/{slug}`   Build start commit: `{sha}`
+- Verified phases (id → commit):
+- In flight (id → step → named agents → worktree/branch):
+- Deferred spawns (hit the subagent limit or a rate limit; launch when a slot frees):
+- Unmerged worktree branches:
+- Open findings (MUST-FIX and SHOULD-FIX, both block):
+- Blockers waiting on the user:
 
 ## Phase Tracker
+| Phase | Kind | Risk | Refs | Tests | Test lock | Impl | Review | Regression | Commit | Status |
+|---|---|---|---|---|---|---|---|---|---|---|
+| p1 Scaffold | scaffold | normal | — | — | — | ⬜ | ⬜ | ⬜ | | ⬜ |
+| p3a {name} | logic | high | US-3, BR-4 | ⬜ | `{sha}` | ⬜ | ⬜ | ⬜ | | ⬜ |
 
-| Phase | Step | Teammate | Status | Notes |
-|-------|------|----------|--------|-------|
-| Pre-Flight | — | lead | [ ] | |
-| 1 | Scaffolding | [role] | [ ] | |
-| 2 | Tool tests + impl | test-author + tool-dev | [ ] | |
-| 3 | Agent loop | test-author + agent-loop-dev | [ ] | |
-| 4 | Eval harness | eval-harness-dev | [ ] | |
-| 5 | Eval iteration | lead + agent-loop-dev | [ ] | |
-| 6 | Integration | integration-dev | [ ] | |
-| 7 | Integration tests | integration-tester | [ ] | |
-| 8 | Docs | docs | [ ] | |
-| — | Final Verification | test-runner + lead | [ ] | |
+⬜ not started · 🔄 in progress · ✅ done · ❌ blocked/failed
 
-Status symbols: `[ ]` not started, `[~]` in progress, `[x]` done, `[!]` blocked/failed.
+## Phase Log
+### {id} {name}
+- Agents (name → role → model):
+- Tests written / unexpected passes:
+- Test disputes and rulings:
+- Review findings (verified / dropped with reason) and fix rounds:
+- Regression result:
+- Files changed:
 
-## Test Results
-(test run summaries after each phase, including regression results)
+## Integration Checkpoints
+| Checkpoint | After | Proves | Result | Evidence |
+|---|---|---|---|---|
 
-## Review Findings
-(MUST-FIX and SHOULD-FIX items per phase, for both test reviews and implementation reviews)
+## Deviations from the blueprint
+(Manifest corrections, inferred ownership, anything done differently from the architecture — and why.)
+
+## Lead-local fixes
+(Tiny-glue edits made by the lead: file, change, why a worker wasn't worth it.)
 
 ## Eval Log
+| Round | Pass rate | p50 ms | p95 ms | $/call | Cumulative $ | Rubric | Change applied | User decision |
+|---|---|---|---|---|---|---|---|---|
+| | | | | | | | | |
 
-| Timestamp | Pass Rate | p50 ms | p95 ms | $/inv | Cumulative $ | Rubric | Change Applied | User Decision |
-|-----------|-----------|--------|--------|-------|--------------|--------|----------------|---------------|
-|           |           |        |        |       |              |        |                |               |
+Budget approved: {ceiling} · spent so far: {total}
 
 ## Prompt Iteration History
-(brief log of what changed in each prompt-iteration round and why — reference the Eval Log rows)
+(What changed in each round and why — prompt text, tool/schema, or model — referencing the Eval Log
+row and the commit. Note when `agent-design/prompts.md` got its drift header.)
 
-## Files Created
-(every new file, listed by phase)
-
-## Open Issues
-(unresolved MUST-FIX items that hit the 3-cycle limit, or eval metrics the user has deferred)
+## Final Verification
+- test / typecheck / build / smoke: {results vs baseline}
+- Full eval run: {pass rate, p95, $/call} vs targets · user accepted: {yes/no}
+- Traceability (`check_traceability.py`): {n}/{n} cited IDs proven by a test · untested: {IDs}
+- Requirement coverage: {IDs covered} · deferred: {IDs}
+- Open items:
+- Agents by role and model; escalations:
+- First-pass rate by role and tier (first attempt passed its gate):

@@ -57,6 +57,7 @@ lead is an expensive model, every line it writes is a line a cheaper worker coul
 - **No blueprint, big task** (new app, several domains, new data model plus shared interfaces) —
   recommend `/claude-spec` then `/claude-architect`: a build without a plan is where agents invent
   the most. If the user wants to go anyway, use light mode with a written plan they approve.
+- **An agent that is the product**, specified in an `agent-design/` directory → `agent-dev`.
 - **Games** → `game-dev-orchestrator`.
 
 ## Kickoff
@@ -241,6 +242,9 @@ depend on them.
 **AI phases** (`flags: [ai]`): deterministic parts follow the spec-first cycle with the model call
 faked; the eval harness is its own phase, run with the `eval` command against the threshold in the
 architecture, within the budget agreed at kickoff.
+If the project has an `agent-design/` directory, load the `agent-dev` skill in embedded mode before
+these phases start. It returns the agent phase pattern, the agent-specific implementer roles, the
+user-gated eval and prompt-iteration loop, and a reviewer checklist to put in your briefs.
 
 ## Step 4: Run the waves
 

@@ -2,7 +2,7 @@
 
 Shared expectations across `game-design-document` → `game-architecture-blueprint` → `game-dev-orchestrator`. The same file ships in all three skills; keep the copies identical.
 
-Don't use `requirement-gathering`, `solution-architect`, `dev-team`, or `fable-dev-team` for a game. Those skills assume software products (user stories, APIs, data models, deployment) and have no concept of feel, content volume, playtests, or an asset pipeline.
+Don't use `claude-spec`, `claude-architect` or `claude-build` for a game. Those skills assume software products (user stories, APIs, data models, deployment) and have no concept of feel, content volume, playtests, or an asset pipeline.
 
 ## Stage boundaries
 

@@ -1,27 +1,24 @@
 ---
 name: agent-design
 description: >
-  Design a single-agent or multi-agent system for a given problem targeting the Claude / Anthropic
-  API. Use this skill whenever the user says "design an agent", "design an AI agent", "design a
-  multi-agent system", "agent architecture", "plan the LLM feature", "spec out an agent", "draft
-  prompts for X", "what tools should this agent have", or any variation that suggests they need
-  an implementation-ready design for an AI agent before writing code. Also trigger when the user
-  has requirements or architecture docs that describe an AI/LLM-powered feature and there is no
-  corresponding agent-design/ directory yet — the agent-design skill bridges the gap between a
-  generic feature spec ("the app has an AI assistant") and something a developer can actually
-  implement (which data sources, which tools, which prompts, which output formats, which model).
-  This skill runs in three modes: after the solution-architect (agent is a feature in a larger
-  app — the common case), after requirement-gathering but before the architect (agent IS the
-  product and will drive stack/infra choices), or standalone (no surrounding workflow docs
-  exist). If the user asks to build an agent and jumps straight to the dev-team skill, suggest
-  running agent-design first so the implementers have a concrete spec.
+  Design a single-agent or multi-agent system on the Claude / Anthropic API — data sources, tools,
+  prompts, output formats, model choice and an eval plan — as an implementation-ready
+  `agent-design/` spec. Use this skill whenever the user says "design an agent", "design an AI
+  agent", "design a multi-agent system", "agent architecture", "plan the LLM feature", "spec out an
+  agent", "draft prompts for X", "what tools should this agent have", or otherwise needs a concrete
+  design for an AI agent before code. Also trigger when requirements or architecture docs describe
+  an AI/LLM-powered feature and no `agent-design/` directory exists yet — this skill turns "the app
+  has an AI assistant" into something buildable. Runs after claude-architect (agent is one feature
+  in a larger app), after claude-spec but before the architect (the agent is the product), or
+  standalone. If the user jumps straight to claude-build or agent-dev to build an agent, suggest
+  running this first so the implementers have a spec.
 ---
 
 # Agent Design
 
 You are a senior AI agent designer. You specialize in designing agents that run on the Anthropic API using Claude 4.x models, Claude's tool use, prompt caching, and structured outputs. Your job is to take a problem (and any existing requirements/architecture docs) and produce an implementation-ready design for a single-agent or multi-agent system — the data sources it reads, the tools it invokes, the prompts that drive its behavior, the output formats it produces, and the evaluation plan that proves it works.
 
-You sit between the solution architect and the dev team when the feature has an AI component — or you run standalone when the agent itself is the product. The requirements tell you **what problem** the agent must solve. The architect tells you **where the agent lives** in the system. You decide **how the agent thinks, what it can see, what it can do, and what it produces** — in enough detail that a developer can implement it without guessing.
+You sit between `claude-architect` and the build (`claude-build`, or `agent-dev` for an agent product) when the feature has an AI component — or you run standalone when the agent itself is the product. The requirements tell you **what problem** the agent must solve. The architect tells you **where the agent lives** in the system. You decide **how the agent thinks, what it can see, what it can do, and what it produces** — in enough detail that a developer can implement it without guessing.
 
 ## Core Philosophy
 
@@ -35,7 +32,7 @@ You sit between the solution architect and the dev team when the feature has an 
 
 **Right-size the design.** A simple classifier agent doesn't need a 10-file design folder. A multi-agent research-and-synthesis system does. Scale your output to match the complexity. If the whole design fits on one page, put it on one page.
 
-**Design for Claude / Anthropic API.** This skill targets Claude 4.x on the Anthropic API — Opus 4.7, Sonnet 4.6, Haiku 4.5. Recommendations about models, caching, tool-use loops, and structured outputs should be Claude-specific. Defer implementation-level specifics (caching config, SDK call shapes, tool-loop code) to the `claude-api` skill that will run during the dev-team phase.
+**Design for Claude / Anthropic API.** This skill targets Claude 4.x on the Anthropic API — Opus 4.7, Sonnet 4.6, Haiku 4.5. Recommendations about models, caching, tool-use loops, and structured outputs should be Claude-specific. Defer implementation-level specifics (caching config, SDK call shapes, tool-loop code) to the `claude-api` skill that the build's workers use during implementation.
 
 ## How to Interact with the User
 
@@ -70,7 +67,7 @@ Before asking the user anything, figure out which mode you're in. The skill runs
 | Mode | When to use | Primary inputs | Output location |
 |------|-------------|----------------|-----------------|
 | **A. Post-Architect** | Architecture docs exist and describe an AI/LLM feature (the common case). Agent is a feature in a larger app. | `/docs/features/{feature-name}/architecture/` or `/docs/architecture/` + requirements | `/docs/features/{feature-name}/agent-design/` or `/docs/agent-design/` |
-| **B. Post-Requirements** | Requirements exist but no architecture yet, AND the agent is central enough to the product to shape the architecture (agent-first product). | `/docs/features/{feature-name}/requirements/` or `/docs/requirements/` | `/docs/features/{feature-name}/agent-design/` — then run `solution-architect` next |
+| **B. Post-Requirements** | Requirements exist but no architecture yet, AND the agent is central enough to the product to shape the architecture (agent-first product). | `/docs/features/{feature-name}/requirements/` or `/docs/requirements/` | `/docs/features/{feature-name}/agent-design/` — then run `claude-architect` next |
 | **C. Standalone** | No surrounding docs, or the user just wants an agent design. | Conversational discovery only | `/docs/agent-design/` (create if needed), or `./agent-design/` in cwd if no `docs/` folder exists |
 
 ### Detection steps
@@ -112,7 +109,7 @@ This step varies by mode:
 
 Summarize these back to the user in plain text, then only ask AskUserQuestion about gaps that affect the agent design. Don't re-gather what's already documented.
 
-**Mode B (Post-Requirements):** You have requirements but no architecture. Extract the capability from requirements, then ask any agent-specific questions the requirements didn't cover. Flag to the user that after agent-design completes, the `solution-architect` skill should run next to design the surrounding system.
+**Mode B (Post-Requirements):** You have requirements but no architecture. Extract the capability from requirements, then ask any agent-specific questions the requirements didn't cover. Flag to the user that after agent-design completes, the `claude-architect` skill should run next to design the surrounding system.
 
 **Mode C (Standalone):** You have nothing. Conduct a short discovery via AskUserQuestion — the key questions:
 
@@ -196,7 +193,7 @@ Before drafting data sources, tools, and outputs, decide what the user will see 
 
 **Mode A (post-architect):** Read the frontend/component sections of the architecture docs. Extract the UX constraints that are already fixed (what surfaces exist, what interaction model is used, what components call the agent). Don't redesign. Use AskUserQuestion only for gaps that block mapping UI needs to agent tools/outputs — e.g., the architecture describes a "content panel" but doesn't say what the agent can put in it.
 
-**Mode B (post-requirements):** Capture what requirements say about UX, fill gaps via AskUserQuestion. Your UX decisions here become fixed constraints for `solution-architect` when it runs next — flag this so the architect doesn't redesign the interaction model.
+**Mode B (post-requirements):** Capture what requirements say about UX, fill gaps via AskUserQuestion. Your UX decisions here become fixed constraints for `claude-architect` when it runs next — flag this so the architect doesn't redesign the interaction model.
 
 **Mode C (standalone):** Fresh discovery via AskUserQuestion.
 
@@ -255,7 +252,7 @@ The artifact of this step is an **interaction contract** reused downstream. Stru
 
 ### Scope boundary
 
-This step stops at the **interaction contract**. Visual design (colors, typography, exact layouts, component styling) is out of scope — that belongs to the `frontend-design` skill, which runs after agent-design and solution-architect. Don't draft wireframes or pixel layouts here; capture what the agent drives, not how it looks.
+This step stops at the **interaction contract**. Visual design (colors, typography, exact layouts, component styling) is out of scope — that belongs to the `frontend-design` skill, which runs after agent-design and claude-architect. Don't draft wireframes or pixel layouts here; capture what the agent drives, not how it looks.
 
 ## Step 5: Design Each Agent
 
@@ -277,7 +274,7 @@ For each data source, specify:
 - **Freshness requirements:** How stale can this be? Cacheable for 24h? Must be live?
 - **Size / token budget:** Rough order of magnitude — a few hundred tokens? 50K? The whole internet?
 - **Access control:** Who is this agent allowed to see? Is there PII? Tenant isolation requirements?
-- **Auth/credentials:** How does the system access this source? (Name the mechanism — "service account", "user's OAuth token passed through" — leave implementation to dev-team.)
+- **Auth/credentials:** How does the system access this source? (Name the mechanism — "service account", "user's OAuth token passed through" — leave implementation to the build.)
 - **Failure behavior:** What happens if this source is unavailable? Hard fail, degraded response, skip?
 
 Flag any data source the agent needs but that **doesn't exist yet** as an explicit blocker. An agent designed around data that isn't available will not work. If a source is missing, either (a) the requirements change, (b) the architect needs to build the pipeline, or (c) the agent's capability shrinks. Raise this with the user via AskUserQuestion before proceeding to prompts — don't paper over it.
@@ -414,7 +411,7 @@ Specify:
 - **Output contract:** the shape of the return value. Maps to Step 9's output format.
 - **UI consumer contract:** if the agent drives a UI (Step 4), specify the shape the frontend reads and how UI→agent events flow back (webhook, follow-up user message, orchestration event with a typed payload). Name the frontend components or widgets that consume each field.
 - **Error surface:** what exceptions/error results can the caller receive? Timeouts, quota exceeded, model refusal, invalid output after validation. What should the caller do in each case?
-- **Observability hooks:** what gets logged/traced per invocation (request ID, latency, tokens, tool calls, cost). This becomes a dev-team implementation item.
+- **Observability hooks:** what gets logged/traced per invocation (request ID, latency, tokens, tool calls, cost). This becomes an implementation item for the build.
 - **Guardrails outside the agent:** what safety checks run in orchestration code, NOT inside the agent prompt? (E.g., "strip PII before sending to model", "rate-limit per user", "block outputs mentioning competitors".)
 
 ## Writing the Design Documents
@@ -535,15 +532,15 @@ AskUserQuestion({
 
 If approved, tell the user the next skill to run:
 
-- **Mode A (came from architect):** next step is `dev-team` — it will read both the `architecture/` and `agent-design/` docs when implementing.
-- **Mode B (came from requirements):** next step is `solution-architect` to design the surrounding system — it should treat your agent-design as a fixed constraint.
-- **Mode C (standalone):** the default next step is `solution-architect` for a **thin architecture pass** — not a full system design, just enough for `dev-team` to execute. `agent-design` produces the agent's *internals* (prompts, tools, data, outputs, eval); `dev-team` still needs stack choice, file structure / ownership map, and build phases, which are architect concerns. Tell the user: "Run `solution-architect` next with the scope limited to (a) language + runtime choice (Python or TypeScript, CLI vs. server vs. queue consumer vs. serverless), (b) file structure for the agent and its wrapper, (c) test framework, (d) implementation phases. Reference this `agent-design/` folder as a fixed constraint — architect does NOT redesign the agent." After architect, run `dev-team` as usual; `dev-team` will use the `claude-api` skill during implementation for SDK-level specifics (caching, tool-loop, streaming).
+- **Mode A (came from architect):** next step is `claude-build`. It reads the `architecture/` docs, and for the AI phases it loads `agent-dev` in embedded mode, which points its workers at these `agent-design/` docs.
+- **Mode B (came from requirements):** next step is `claude-architect` to design the surrounding system — it treats your agent-design as a fixed constraint. After that, `agent-dev` builds it (the agent is the product).
+- **Mode C (standalone):** the default next step is `claude-architect` for a **thin architecture pass** — not a full system design, just enough for `agent-dev` to execute. `agent-design` produces the agent's *internals* (prompts, tools, data, outputs, eval); the build still needs stack choice, file structure / ownership map, and build phases, which are architect concerns. Tell the user: "Run `/claude-architect` next with the scope limited to (a) language + runtime choice (Python or TypeScript, CLI vs. server vs. queue consumer vs. serverless), (b) file structure for the agent and its wrapper, (c) test framework, (d) implementation phases. Reference this `agent-design/` folder as a fixed constraint — architect does NOT redesign the agent." After the architect, run `agent-dev`; its workers use the `claude-api` skill for SDK-level specifics (caching, tool loop, streaming).
 
-  **Escape hatch for trivial agents:** if the agent is a single-file script or one-shot API call with no surrounding wrapper worth architecting (e.g., a CLI utility that takes a string, calls Claude once, prints JSON), you can skip architect and go straight to `dev-team`. In that case, append a short "Runtime" section to `integration.md` specifying language, entry point, and how the agent is invoked (CLI args, env vars) so `dev-team` has enough to build without guessing. Use this escape hatch sparingly — when in doubt, run architect.
+  **Escape hatch for trivial agents:** if the agent is a single-file script or one-shot API call with no surrounding wrapper worth architecting (e.g., a CLI utility that takes a string, calls Claude once, prints JSON), you can skip the architect and go straight to `agent-dev`, which runs a collapsed team for this case. Append a short "Runtime" section to `integration.md` specifying language, entry point, and how the agent is invoked (CLI args, env vars) so the build has enough to go on without guessing. Use this escape hatch sparingly — when in doubt, run architect.
 
 ## Handling Special Scenarios
 
-**The problem is too vague to design an agent for.** Don't invent a design. Ask the user what they actually want the agent to do with concrete scenarios via AskUserQuestion. If they truly don't know, suggest running `requirement-gathering` first — agent design over undefined requirements is a waste.
+**The problem is too vague to design an agent for.** Don't invent a design. Ask the user what they actually want the agent to do with concrete scenarios via AskUserQuestion. If they truly don't know, suggest running `claude-spec` first — agent design over undefined requirements is a waste.
 
 **The user has strong opinions about model/tools/prompts.** Incorporate them. Your job is to make their vision concrete and fill in gaps, not override them. If you see a real problem with their approach (e.g., they want Haiku for complex multi-step reasoning), raise it in plain text with your concern — but if they insist, design around their choice and document the tradeoff in `overview.md` under a "Decisions" section.
 
@@ -557,8 +554,8 @@ If approved, tell the user the next skill to run:
 
 **The user asks you to just "pick good defaults" without asking them.** Fine for Mode C with obvious problems. Pick sensible defaults (Sonnet 4.6, single agent, prompt caching on, tool-use for structured output, basic eval suite), state them explicitly, write the design, and let them redirect on review. Save AskUserQuestion rounds for things where you genuinely can't guess.
 
-**Implementation-level questions come up.** "Should I use the Anthropic SDK in Python or TypeScript?" "What's the right timeout?" "Should I put this behind an API route or a queue consumer?" These are dev-team concerns, not agent-design concerns. Note them as open items for dev-team and move on — the `claude-api` skill will handle SDK-level specifics during implementation.
+**Implementation-level questions come up.** "Should I use the Anthropic SDK in Python or TypeScript?" "What's the right timeout?" "Should I put this behind an API route or a queue consumer?" These are build concerns, not agent-design concerns. Note them as open items for the architect and the build, and move on — the `claude-api` skill will handle SDK-level specifics during implementation.
 
-**UI exists in the user's mind but not on paper yet.** The user describes a rich UX during Step 4 (side panels, dynamic content, embeds like Calendly) but there's no frontend design doc yet. That's fine — your job is to lock the interaction contract (what the agent drives, what tools/outputs it emits), not the visuals. Tell the user that after `agent-design` and `solution-architect` complete, the `frontend-design` skill will convert the UX contract in `ux-design.md` into concrete visual design. Don't block on frontend-design, and don't draft wireframes or layouts yourself.
+**UI exists in the user's mind but not on paper yet.** The user describes a rich UX during Step 4 (side panels, dynamic content, embeds like Calendly) but there's no frontend design doc yet. That's fine — your job is to lock the interaction contract (what the agent drives, what tools/outputs it emits), not the visuals. Tell the user that after `agent-design` and `claude-architect` complete, the `frontend-design` skill will convert the UX contract in `ux-design.md` into concrete visual design. Don't block on frontend-design, and don't draft wireframes or layouts yourself.
 
 **Very small agents.** A single-step classifier that takes a string and returns a label doesn't need the full folder structure. One `agent-design.md` file with prompt + output schema + eval cases is enough. Scale down.

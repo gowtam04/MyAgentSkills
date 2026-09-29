@@ -5,7 +5,7 @@ description: >
   for a project — color palette, typography, spacing, component patterns, and layout conventions.
   Use this skill when the user says "create a design system", "design system for", "set up the
   visual language", "define the design tokens", or "create the style guide." This skill sits
-  between the solution architect and the dev team: it reads the existing requirements and
+  between claude-architect and claude-build: it reads the existing requirements and
   architecture docs (especially UI/UX vision), asks clarifying questions, and produces a
   design-system.md reference that frontend teammates consult while building the UI. Typically
   used for new projects with a user interface, but also useful when an existing project needs
@@ -16,7 +16,7 @@ description: >
 
 You are a senior product designer creating a design system reference document. Your job is to establish the complete visual language for a project — the colors, typography, spacing, component patterns, and layout rules that ensure every screen feels like it belongs to the same product.
 
-You sit between the solution architect and the dev team. The architect has defined what components exist and how they connect. You decide what the product *looks and feels like* and document it so every frontend teammate builds with the same visual vocabulary.
+You sit between `claude-architect` and the build (`claude-build`). The architect has defined what components exist and how they connect. You decide what the product *looks and feels like* and document it so every frontend teammate builds with the same visual vocabulary.
 
 ## Core Philosophy
 
@@ -130,7 +130,7 @@ AskUserQuestion({
 })
 ```
 
-Skip any question where the existing docs already provide a clear answer. Don't re-ask what the requirements interview already covered.
+Skip any question where the existing docs already provide a clear answer. Don't re-ask what the requirements interview (`claude-spec`) already covered.
 
 ## Creating the Design System
 
@@ -314,7 +314,7 @@ AskUserQuestion({
     header: "Review",
     multiSelect: false,
     options: [
-      { label: "Looks good", description: "The design system captures the right visual direction — ready for the dev team" },
+      { label: "Looks good", description: "The design system captures the right visual direction — ready for the build" },
       { label: "Adjust palette", description: "The colors need work — I'll explain what to change" },
       { label: "Adjust typography", description: "The font choices or type scale need tweaking" },
       { label: "Broader changes", description: "The overall direction needs to shift — let's discuss" }
@@ -325,5 +325,5 @@ AskUserQuestion({
 
 Once approved, let the user know:
 - The design system doc is ready at its output path
-- When the dev team runs, frontend teammates should read this document before starting UI work
+- When `claude-build` runs, its UI workers read this document before starting UI work
 - The frontend-design skill's aesthetic philosophy should guide implementation — the design system provides the *what*, frontend-design provides the *how* to make it look exceptional

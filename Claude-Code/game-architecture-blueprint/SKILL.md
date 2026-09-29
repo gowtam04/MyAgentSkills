@@ -9,7 +9,7 @@ description: >
   the user has a GDD, slice definition, or game idea and asks to "architect this game", "how
   should we build this game", "plan the vertical slice", choose between Godot/Unity/Unreal/
   Phaser/web canvas, lay out scenes/entities, design an asset pipeline, or move from game
-  design toward coding and art. Prefer it over solution-architect whenever the deliverable is
+  design toward coding and art. Prefer it over claude-architect whenever the deliverable is
   a game. Run game-design-document first if the GDD is missing or thin; hand off to
   game-dev-orchestrator after.
 ---

@@ -8,7 +8,7 @@ description: >
   whenever the user wants to build the game, implement the vertical slice, "build from the
   GDD/architecture", spin up a "game team" or "game swarm", or produce game assets as part of
   a coordinated build — even if they just say "ok, let's make it" after a game architecture
-  exists. Prefer it over dev-team / fable-dev-team whenever the deliverable is a game. Run
+  exists. Prefer it over claude-build whenever the deliverable is a game. Run
   game-architecture-blueprint first if architecture docs are missing or too coarse to assign
   file ownership.
 compatibility: Requires Claude Code (Agent tool for subagents; git for worktree isolation). Asset QA script needs Python + Pillow.
@@ -150,7 +150,7 @@ Run `python3 <this skill dir>/scripts/check_manifest.py <manifest doc> --root <p
 
 Then read the GDD via the architecture's GDD Reference or `docs/gdd/`.
 
-If the architecture is absent, incomplete, or too coarse to assign file ownership, stop. Don't silently invent a plan, and don't fall back to a generic software dev-team skill.
+If the architecture is absent, incomplete, or too coarse to assign file ownership, stop. Don't silently invent a plan, and don't fall back to the software build skill (`claude-build`).
 
 **Grok-era manifests:** if the Asset Manifest uses `skill: game-asset-core` (from the Grok version of this pipeline) instead of `method`, map it using `references/asset-production.md` ("Legacy manifests") and note the mapping in the progress file.
 

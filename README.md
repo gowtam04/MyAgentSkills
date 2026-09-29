@@ -12,17 +12,17 @@ Skills are triggered by natural language — you don't need to remember commands
 
 | Skill | What it does | Example triggers |
 |---|---|---|
-| [`agent-team`](./agent-team/) | Orchestrate multi-agent teams to build features and applications in parallel | "build this with a team", "set up agents for this project" |
+| [`claude-architect`](./Claude-Code/claude-architect/) | Turn requirements into an architecture and a Build Manifest a subagent team can build in parallel | "design the architecture", "how should we build this" |
+| [`claude-build`](./Claude-Code/claude-build/) | Lead a subagent team that builds from the architecture — spec-first tests, review, per-phase commits | "build it", "build this with a team", "have subagents do it" |
+| [`claude-spec`](./Claude-Code/claude-spec/) | Interview you and write requirements with stable IDs and testable acceptance criteria | "interview me", "help me spec this out" |
 | [`code-review-agent-team`](./code-review-agent-team/) | Review and fix code using independent reviewer and fixer agents | "review and fix my code", "fix the review issues" |
 | [`create-brandkit`](./create-brandkit/) | Generate logos, icons, favicons, banners, and full company brand kits | "create a logo", "set up our company branding" |
 | [`excalidraw-diagram-generator`](./excalidraw-diagram-generator/) | Create flowcharts, architecture diagrams, and mind maps as `.excalidraw` files | "create a diagram", "visualize this process" |
 | [`find-skills`](./find-skills/) | Discover and install skills from the open agent skills ecosystem | "find a skill for X", "is there a skill that can..." |
 | [`fly-deploy`](./fly-deploy/) | Configure and deploy Docker-based applications to Fly.io | "deploy this to fly", "set up fly for my app" |
 | [`frontend-design`](./frontend-design/) | Build production-grade UIs with strong aesthetic direction — no generic AI output | "build a landing page", "design a dashboard" |
-| [`requirements-interview`](./requirements-interview/) | Conduct structured interviews to produce business and product requirements docs | "interview me", "help me spec this out" |
 | [`seo-audit`](./seo-audit/) | Audit and diagnose SEO issues with a prioritized action plan | "SEO audit", "why am I not ranking" |
 | [`skill-creator`](./skill-creator/) | Create, improve, benchmark, and evaluate skills | "create a new skill", "improve this skill" |
-| [`solution-architect`](./solution-architect/) | Design technical solutions from business requirements — data model, APIs, implementation plan | "design the architecture", "how should we build this" |
 
 ## Skill Structure
 

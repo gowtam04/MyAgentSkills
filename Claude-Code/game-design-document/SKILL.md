@@ -7,7 +7,7 @@ description: >
   GDD, game design doc, design bible, "document my game", "interview me about my game",
   "write up the design for my game idea", pitch-to-GDD, or needs design docs before coding,
   art, architecture, or a vertical slice — even if they only describe a game idea and ask
-  "where do I start?". Prefer it over requirement-gathering whenever the thing being built is a
+  "where do I start?". Prefer it over claude-spec whenever the thing being built is a
   game (player fantasy, mechanics, loops, levels, feel) rather than a non-game product. First
   step of the game pipeline: game-design-document → game-architecture-blueprint →
   game-dev-orchestrator.
@@ -141,7 +141,7 @@ Summarize a **design digest** in prose (pitch, pillars, core loop, major systems
 | UX flows and feel goals | Pixel-perfect comps as final art |
 | Production scope and risks | CI/CD, repo layout |
 
-If the user jumps into pure engineering, record it under Constraints and return to design. Technical architecture is `game-architecture-blueprint`'s job (not `solution-architect`, which assumes a non-game software product).
+If the user jumps into pure engineering, record it under Constraints and return to design. Technical architecture is `game-architecture-blueprint`'s job (not `claude-architect`, which assumes a non-game software product).
 
 ## Writing The Documentation
 
