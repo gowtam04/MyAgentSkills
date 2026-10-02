@@ -58,31 +58,32 @@ Split phases into parallel slices wherever they're honestly independent (one per
 Derived from File Structure and Implementation Phases. Prose is the source of truth; generate last.
 
 ```yaml
-commands: { run: "...", test: "...", test_one: "...", export: "...", smoke: "...", screenshot: "..." }
+commands: { run: "...", test: "...", test_one: "... {files}", typecheck: "...", export: "...", smoke: "...", screenshot: "..." }
 phases:
   - id: p1
     name: ...               # MUST match the prose phase name
+    kind: gameplay          # scaffold|contracts|gameplay|content|assets|audio|juice|ui|wiring|playtest|docs
+    risk: normal            # optional: normal | high (physics, save/load, economy, netcode, determinism)
     depends_on: []
-    owns:   ["..."]
-    shared: ["..."]
+    owns:   ["..."]         # production files and assets
+    tests:  ["..."]         # test files, owned separately; required for gameplay
+    shared: []
     gdd_refs: ["docs/gdd/03-systems.md#crane-pendulum"]
-    kind: scaffold          # scaffold|gameplay|content|assets|audio|juice|ui|playtest
     test_focus: "..."
     playtest_focus: "none"
-    flags: []
 playtest_checkpoints:
-  - { after: [p2], name: loop-playable, verifies: "..." }
+  - { name: loop-playable, after: [p2], verifies: "..." }
 assets:
   - id: style-lock
     path: assets/style/style-lock.png
     kind: style-lock
-    method: code-vector      # code-vector|code-raster|procedural|image-gen|greybox|external
+    method: code-vector      # code-vector|code-raster|procedural|image-gen|greybox|external|stub
     slice: true
     depends_on: []
-    phase: p4
+    phase: p4                # this phase's `owns` must cover the path
 ```
 
-For a trivial single-phase feature, inline `owns` / `depends_on` / `gdd_refs` / `test_focus` into the prose and omit this block.
+For a trivial single-phase feature, inline `owns` / `tests` / `depends_on` / `gdd_refs` / `test_focus` into the prose and omit this block. Field rules and the YAML subset: `references/pipeline-contract.md`.
 
 ## Technical Decisions
 Hard-to-reverse choices, alternatives, rationale, tradeoffs.

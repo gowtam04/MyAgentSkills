@@ -1,92 +1,78 @@
-# Game Build Progress
+# {Game / Feature} — Game Build Progress
 
-Status: `not-started` | `in-progress` | `blocked` | `done` | `verified` | `COMPLETE`
+Status: IN PROGRESS | BLOCKED | COMPLETE
 
 ## References
-
-- Architecture: `[path]`
-- GDD: `[path]`
-- Game Build Manifest: `present | absent` (path if present)
-- Asset Manifest: `present | absent`
-- Mode: `PM | Developer`
-- Scale: `jam | vertical-slice | shippable-indie`
-- Rigor: `light | standard | full`
-- Engine:
-- Task list: TodoWrite / TaskCreate (whichever this Claude Code version has)
+- Architecture: `{path}`
+- GDD: `{path}`
+- Game Build Manifest: present | absent (inferred — see Deviations) — `check_manifest.py`: {0 errors / notes}
+- Asset Manifest: present | absent | greybox-only
+- Mode: PM | Developer   Scale: jam | vertical-slice | shippable-indie
+- Engine: {engine / runtime}
+- Build engine: subagents | workflow (script path: `{path}`)
+- Model routing: judgment-heavy phases (Opus implementer + panel + lead diff read): {ids} · all others: Sonnet implementer · style lock: Opus artist · asset families: Sonnet artists
 
 ## Environment
-
-- run / test / test_one / export / smoke (from architecture/manifest):
-- Screenshot / playtest evidence dir:
-- Asset tooling available (Pillow / SVG rasterizer / image-gen MCP):
-- Worktrees possible (git repo with commits): yes | no
-- Notes:
+- Commands: install `…` · run `…` · test `…` · test_one `…` · typecheck `…` · build/export `…` · smoke `…` · screenshot `…`
+- Baseline (before the build): {passed/failed; pre-existing failures listed here}
+- Permissions: {allow rules added | auto mode | prompts expected}
+- Asset tooling: Pillow {yes/no} · SVG rasterizer {tool/no} · image-gen tool {name/none → fallback: …}
+- Playtest evidence dir: `tmp/playtest/`
 
 ## Resume Snapshot
-
-- Last completed phase id / name:
-- Last green verification (commands + outcome):
-- Last playtest (checkpoint + evidence path):
-- Style-lock paths (palette / rules / reference sheet, or greybox-only):
-- Open review findings (MUST-FIX + SHOULD-FIX — both must clear before phase verified):
+- Branch: `build/{slug}`   Build start commit: `{sha}`
+- Style lock: `{palette / rules / reference sheet paths}` | greybox-only — commit `{sha}`
+- Verified phases (id → commit):
+- In flight (id → step → named agents → worktree/branch):
+- Deferred spawns (hit the subagent limit or a rate limit; launch when a slot frees):
+- Unmerged worktree branches:
+- Open findings (MUST-FIX and SHOULD-FIX, both block):
 - Open asset defects:
-- Deferred spawns (work that hit the concurrent-subagent limit or a rate-limit error; launch when a slot frees):
-- Worktrees / branches in play, not yet merged:
-- Active named agents (name → role → phase), for SendMessage fix rounds:
+- Blockers waiting on the user:
 
-## Current Phase
+## Phase Tracker
+| Phase | Kind | Risk | gdd_refs | Tests | Test lock | Impl / Assets / Content | Review | Regression | Playtest | Commit | Status |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| p1 Scaffold | scaffold | normal | — | — | — | ⬜ | ⬜ | ⬜ | — | | ⬜ |
+| p3 Style lock | assets | normal | 06-art-audio-juice#art-direction | — | — | ⬜ | ⬜ | — | — | | ⬜ |
+| p4a {name} | gameplay | high | 03-systems#drop | ⬜ | `{sha}` | ⬜ | ⬜ | ⬜ | ⬜ | | ⬜ |
 
-- Phase name / number / manifest id:
-- kind:
-- gdd_refs:
-- Status: `not-started` | `in-progress` | `blocked` | `done` | `verified`
-- Active workers (name → role → model → owned files / isolation):
+⬜ not started · 🔄 in progress · ✅ done · ❌ blocked/failed · — not applicable
 
 ## Phase Log
+### {id} {name}
+- Agents (name → role → model):
+- Tests written / unexpected passes:
+- Test disputes and rulings:
+- Review findings (verified / dropped with reason) and fix rounds:
+- Asset QA: contact sheets, defects, lock match:
+- Regression result:
+- Playtest: criteria → PASS / FAIL / NEEDS-HUMAN, evidence paths:
+- Files changed:
 
-### Phase N: {Name}
+## Playtest and Integration Checkpoints
+| Checkpoint | After | Proves | Integration tests | Playtest | Evidence |
+|---|---|---|---|---|---|
 
-kind:  
-gdd_refs:
+## NEEDS-HUMAN
+(Criteria screenshots can't settle — feel, timing, audio, haptics — and what the user should try.)
 
-| Step | Status | Notes |
-|------|--------|-------|
-| Tests | | |
-| Red check | | |
-| Test review | | |
-| Implementation | | |
-| Assets | | |
-| Content | | |
-| Impl review | | |
-| Regression | | |
-| Playtest | | |
+## Audio and Art Stubs
+(Stubbed or greybox assets that ship in this build, and why.)
 
-Playtest evidence (screenshot paths) and NEEDS-HUMAN items:
+## Deviations from the blueprint
+(Manifest corrections, inferred ownership, legacy-manifest mappings, art fallbacks, anything done
+differently from the architecture — and why.)
 
-Files created/modified:
-
-Verification commands and results:
-
-MUST-FIX / SHOULD-FIX (all must be fixed before phase verified):
-
-Asset defects:
-
-## Playtest Checkpoints
-
-- From architecture:
-- Results + evidence paths:
+## Lead-local fixes
+(Tiny-glue edits made by the lead: file, change, why a worker wasn't worth it.)
 
 ## Final Verification
-
-- Full suite:
-- Smoke / export:
-- Slice playtest (evidence paths):
-- NEEDS-HUMAN items for the user to try:
-- gdd_refs covered / gaps:
+- test / typecheck / build or export / smoke / screenshot: {results vs baseline}
+- Traceability (`check_traceability.py`): {n}/{n} cited gdd_refs proven by a test · untested: {refs}
+- gdd_refs coverage: proven by tests {refs} · by playtest {refs} · deferred {refs}
+- Slice playtest: {result, evidence paths}
 - Asset defects remaining:
-- Audio / art stubs and other flagged gaps:
-- Review findings remaining (should be none):
-
-## Parent-Local Fixes
-
-(Tiny critical-path edits done by the orchestrator parent, if any.)
+- Open items:
+- Agents by role and model; escalations:
+- First-pass rate by role and tier (first attempt passed its gate):

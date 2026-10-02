@@ -47,7 +47,7 @@ When the design has genuine architectural ambiguity with high reversal cost (eng
 - `references/ownership-checklist.md` — run before finalizing file structure and phases
 - `references/developer-mode.md` — when the user chooses Developer mode
 - `references/engine-notes.md` — load **after** the engine is chosen; typical folders, commands, and how an agent can see the game
-- `scripts/check_manifest.py` — lints the Game Build Manifest (ownership partition, shared-file creators, deps, gdd_refs, commands, asset methods); run it before presenting
+- `scripts/check_manifest.py` — validates the Game Build Manifest (ownership partition incl. `tests`, glob overlap, shared-file creators, deps, kinds and `risk`, gdd_refs, commands, asset methods and owning phases); run it before presenting
 
 ## Before Designing
 
@@ -131,7 +131,7 @@ Cover what applies. Don't invent GDD rules; map them to modules.
 ### 6. Produce The Build Blueprint
 
 - Complete file structure with a purpose for every code **and** asset file. Run `references/ownership-checklist.md`.
-- Granular phases, **vertical-slice-first**, split into parallel slices (see below). Each phase: What gets built, Depends on, Produces, Parallel opportunities (fully disjoint write sets with globs), Test focus, Playtest focus, **gdd_refs**. Developer mode also Success criteria and Review checklist.
+- Granular phases, **vertical-slice-first**, split into parallel slices (see below). Each phase: What gets built, Depends on, Produces, Parallel opportunities (fully disjoint write sets with globs), Test focus, Playtest focus, **gdd_refs**, and `risk: high` where a subtle mistake is expensive (physics, save/load, economy, netcode, determinism, input timing). Developer mode also Success criteria and Review checklist.
 - Typical dependency shape (adapt; don't cargo-cult software auth→API→UI). Items on the same line can run at the same time:
   1. Scaffold (engine project, folders, pinned commands, screenshot harness) **‖** style lock **‖** contracts (shared types/interfaces, data schema)
   2. One slice per in-slice rules module (overlap, scoring, lives, state machine…), each with its own tests **‖** every asset family **‖** content data against the schema
@@ -153,7 +153,7 @@ Techniques, roughly in order of payoff:
 2. **Contracts first.** Put shared types, interfaces, event names, and the data schema in an early *contracts* phase (small, owned once). Every later slice codes and writes tests against those contracts in parallel, instead of waiting for the module it calls to exist.
 3. **No hub files shared by many phases.** Scene roots, the main game loop, autoload registries, and `main.ts`-style entry points are where plans serialize. Use registration/plug-in points instead: each feature module exports a `register(game)` / `install(scene)` function in its own file, and a single *wiring* phase owns the hub and calls them. If a file would appear in `shared` for three or more phases, restructure — `check_manifest.py` warns about exactly this.
 4. **Start the style lock at the beginning** (`depends_on: []`), alongside scaffold and contracts, so art is never on the critical path. Then give each asset family (player, enemies, tiles, UI, FX, backdrops) its own phase and glob so they all start the moment the lock lands.
-5. **Tests are their own owned files.** Each slice's tests live in files only that slice's test-author writes, so test-authoring for all slices can run at once.
+5. **Tests are their own owned files.** Each slice's tests live in files listed under the phase's `tests` field (not `owns`), written only by that slice's test-writer, so test-writing for all slices can run at once and the implementer never edits them.
 6. **Content data splits by file.** One file per level/wave/table when volume allows, so several content-authors can work together once the schema exists.
 7. **Keep playtest gates few and meaningful.** They're barriers; place them where they catch real integration risk (loop playable, assets on greybox, full slice), not after every phase.
 
@@ -172,7 +172,7 @@ Don't write final docs until:
 - [ ] File ownership map is complete (code + assets)
 - [ ] Asset Manifest covers slice assets with a realistic `method`; style-lock is a dependency of character/tile/UI sets
 - [ ] Interfaces at multi-worker and high-risk seams are specified at autonomous-builder depth
-- [ ] Every phase has depends/produces/parallel/test focus/playtest focus/**gdd_refs**
+- [ ] Every phase has depends/produces/parallel/test focus/playtest focus/**gdd_refs**; gameplay phases list their test files; high-risk phases are marked `risk: high`
 - [ ] Playtest checkpoints are named, and a screenshot/smoke path exists for them
 - [ ] Run/test/smoke commands are pinned (or TBD for scaffold only)
 - [ ] Ownership checklist passes
@@ -206,13 +206,13 @@ The docs pass only if:
 - Hard-to-reverse choices have rationale, alternatives, and tradeoffs.
 - Phase order is slice-first; gdd_refs point at real GDD sections/systems.
 - Every asset has a production method an agent can actually execute.
-- The manifest matches the prose (names, owns, depends_on, gdd_refs, commands, assets).
+- The manifest matches the prose (names, owns, tests, depends_on, gdd_refs, risk, commands, assets).
 - The plan is as wide as the design honestly allows: no avoidable hub-file serialization, style lock and contracts early, one slice per system and asset family.
 - A competent `game-dev-orchestrator` team could execute without asking structural questions or inventing player-facing behavior.
 
 Avoid "the gameplay layer handles mechanics." Say which module owns which GDD system, what it exposes, and who depends on it.
 
-Before presenting, run `python3 <this skill dir>/scripts/check_manifest.py <implementation-plan.md or design.md> --root <project root>` (needs PyYAML; if it's missing, walk `references/ownership-checklist.md` by hand and say so). Fix every error in the prose first, then the manifest, and re-run. The most common miss is a file that later phases list under `shared` but no phase `owns` — someone has to create it, usually the scaffold or the phase that introduces the module. Eyeballing a long YAML block misses this; the script doesn't.
+Before presenting, run `python3 <this skill dir>/scripts/check_manifest.py <implementation-plan.md or design.md> --root <project root>` (no third-party packages needed; write the manifest in the YAML subset `references/pipeline-contract.md` defines). Fix every error in the prose first, then the manifest, and re-run. The most common miss is a file that later phases list under `shared` but no phase `owns` — someone has to create it, usually the scaffold or the phase that introduces the module. Eyeballing a long YAML block misses this; the script doesn't.
 
 After writing, list the files as clickable links, summarize key decisions, and ask for review via `AskUserQuestion` (approve / request changes). Update in place on changes. Once approved, hand off.
 

@@ -9,12 +9,13 @@ Run this before finalizing architecture docs. `game-dev-orchestrator` uses the f
 - [ ] Each file has a single owner module.
 - [ ] New vs modified is clear when working in an existing repo.
 - [ ] Shared types, autoloads, scene roots, atlases, and import config live in dedicated files so feature modules do not both edit them in the same phase.
-- [ ] Test files are listed alongside the production files they cover (or called out per phase).
+- [ ] Test files are listed alongside the production files they cover, and owned through the phase's `tests` field, not `owns`.
 
 ## Phases
 
 - [ ] Each phase lists specific files/components, not vague areas ("gameplay", "art").
 - [ ] Dependencies between phases are explicit. Style-lock precedes character/tile/UI sets. Schema precedes content-authors.
+- [ ] Phases where a subtle mistake is expensive (physics, save/load, economy, netcode, determinism, input timing) are marked `risk: high`.
 - [ ] Parallel opportunities only span fully disjoint write sets; each parallel slice lists explicit globs or "none — sequential."
 - [ ] Each phase has a test focus **or** states why automated TDD does not apply (scaffold, greybox feel, assets, audio stubs).
 - [ ] Each phase has a playtest focus **or** "none — not playable yet."
@@ -35,19 +36,20 @@ Run this before finalizing architecture docs. `game-dev-orchestrator` uses the f
 
 - [ ] Manifest present (or trivial single-phase with fields inlined in prose).
 - [ ] `phases[].name` / `depends_on` match prose.
-- [ ] `owns` globs partition the File Structure; no dual ownership.
+- [ ] `owns` and `tests` globs partition the File Structure; no dual ownership, no path in both fields.
+- [ ] Every `gameplay` phase has `tests`.
 - [ ] Multi-touch files listed under `shared`, not two `owns`.
 - [ ] Every `shared` path is also in the `owns` of an upstream phase that creates it (or already exists in the repo). Every file in the File Structure appears in exactly one phase's `owns`.
 - [ ] `scripts/check_manifest.py` reports 0 errors.
 - [ ] `gdd_refs` match prose phase refs.
 - [ ] `commands` match pinned run/test/export.
-- [ ] `kind` is one of scaffold | gameplay | content | assets | audio | juice | ui | playtest.
+- [ ] `kind` is one of scaffold | contracts | gameplay | content | assets | audio | juice | ui | wiring | playtest | docs.
 - [ ] Playtest checkpoints cover the slice loop.
 
 ## Asset Manifest
 
 - [ ] Style-lock exists as its own asset (or an explicit "greybox-only, no style-lock" note for jam/greybox-first).
-- [ ] Every slice visual has id, path, kind, production `method`, `depends_on`, owning phase.
+- [ ] Every slice visual has id, path, kind, production `method`, `depends_on`, owning phase — and that phase's `owns` covers the path.
 - [ ] Every `method` is executable by an agent: `image-gen` only if the user confirmed a generation tool; otherwise `code-vector` / `code-raster` / `procedural` / `greybox` / `external`.
 - [ ] Two assets that would share a sheet/atlas are not assigned to parallel workers.
 - [ ] Out-of-slice ship assets are listed only when Scale is shippable-indie; otherwise deferred in a short "later" list, not fake-owned.

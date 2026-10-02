@@ -1,0 +1,28 @@
+{
+  "skill_name": "game-dev-orchestrator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Build this game — the architecture is in docs/game-architecture/design.md and the GDD is in docs/gdd/. Dry run: write docs/progress/dry-run-plan.md with kickoff answers applied (recommended model routing, subagents, allow rules), the wave schedule, the exact Agent calls for wave 1 and for p4c's asset-artist, p4a's test-writer and implementer, and the loop-playable checkpoint's workers, plus the git commands for p4a.",
+      "expected_output": "A dry-run plan showing explicit models, a style lock before other art, isolated test-writers, locked tests, explicit git paths, parallel launch, and paired integration-tester and playtester at the checkpoint",
+      "files": [
+        "evals/files/tower-drop-arch"
+      ],
+      "assertions": [
+        "docs/progress/dry-run-plan.md exists",
+        "Every Agent call sets model explicitly per the routing (none omitted, none fable)",
+        "The style-lock artist (p3) runs on opus and the p4c asset-family artist runs on sonnet",
+        "p4c's artist brief includes the style-lock paths, asset-production.md and asset_qa.py",
+        "Test-writer prompts contain no implementation file paths and ask for gdd: tags",
+        "Implementer prompts forbid editing the test files",
+        "The git plan commits p4a's tests before its implementation",
+        "git add uses explicit paths (never -A or '.')",
+        "Wave 1's workers (p1 and p3) are launched together in one message",
+        "p4a (risk: high) gets a test review before implementation and a panel review after",
+        "The loop-playable checkpoint launches an integration-tester and an opus playtester, and the playtester gets the screenshot command",
+        "Worker prompts tell workers not to run state-changing git commands",
+        "No files other than the plan were created or modified"
+      ]
+    }
+  ]
+}
