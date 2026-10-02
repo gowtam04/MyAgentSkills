@@ -15,7 +15,19 @@ schema). Keep the copies identical when editing. `claude-architect/scripts/check
 
 Left as they are (not replaced): `brainstorm`, `design-system`, `code-review-agent-team`,
 `fable-codebase-audit`, `fable-ui-design`, the Fable trio (`fable-orchestrator`, `fable-architect`,
-`efficient-fable`), `agent-design`/`agent-dev`, and the game pipeline.
+`efficient-fable`), and `agent-design`/`agent-dev`.
+
+## Game pipeline (aligned with claude-build)
+
+`game-design-document → game-architecture-blueprint → game-dev-orchestrator` follows the same
+process as the software pipeline: modes, model routing, spec-first tests locked in a commit,
+lead-only git, review panels for `risk: high`, integration checkpoints, traceability (tests carry
+`gdd:<file stem>#<anchor>` tags instead of AC/BR IDs) and a commit per verified phase. It keeps
+its own asset track (style lock, `method`, `asset_qa.py`), playtester and `needs-human` items. All
+three game skills carry an identical game `references/pipeline-contract.md`, and
+`game-architecture-blueprint/scripts/check_manifest.py` and
+`game-dev-orchestrator/scripts/check_manifest.py` are identical. These copies mirror
+`Claude-Code/` and are already promoted.
 
 ## What changed from the old skills
 
